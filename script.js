@@ -12,10 +12,13 @@ class VictorApp {
     }
     
     // Inicialización de la aplicación
-    init() {
+    async init() {
         this.setupEventListeners();
-        this.initializeSupabase();
-        this.loadVehicles();
+        await this.initializeSupabase();
+        // Solo cargar vehículos si Supabase se inicializó correctamente
+        if (supabase) {
+            this.loadVehicles();
+        }
     }
     
     // Configurar event listeners
@@ -68,22 +71,26 @@ class VictorApp {
             }
             
             // Esperar un poco más para asegurar que los scripts se carguen
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             const isInitialized = window.SupabaseConfig.initialize();
             if (isInitialized) {
                 const isConnected = await window.SupabaseConfig.testConnection();
                 if (isConnected) {
                     this.showToast('Conexión con Supabase establecida', 'success');
+                    return true;
                 } else {
                     this.showToast('Error de conexión con Supabase', 'error');
+                    return false;
                 }
             } else {
                 this.showToast('Configuración de Supabase requerida', 'warning');
+                return false;
             }
         } catch (error) {
             console.error('Error al inicializar Supabase:', error);
             this.showToast('Error al inicializar la base de datos', 'error');
+            return false;
         }
     }
     
