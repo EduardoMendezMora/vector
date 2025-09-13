@@ -139,6 +139,39 @@ body {
     overflow: hidden;
 }
 
+/* Submenu Styles */
+.submenu {
+    list-style: none;
+    margin-left: 1rem;
+    margin-top: 0.5rem;
+    border-left: 2px solid rgba(255, 255, 255, 0.2);
+    padding-left: 1rem;
+}
+
+.submenu .nav-item {
+    margin: 0.25rem 0;
+}
+
+.submenu .nav-link {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.submenu .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.submenu .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.sidebar.collapsed .submenu {
+    display: none;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;
@@ -338,7 +371,8 @@ body {
     letter-spacing: 0.5px;
 }
 
-.vehicles-table tbody tr:hover {
+.vehicles-table tbody tr:hover,
+.brands-table tbody tr:hover {
     background-color: #f8f9fa;
 }
 
@@ -523,16 +557,19 @@ body {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     padding: 0.75rem;
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 0.9rem;
     transition: border-color 0.3s ease;
+    font-family: inherit;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);

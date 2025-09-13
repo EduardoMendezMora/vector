@@ -4,8 +4,13 @@
 class VictorApp {
     constructor() {
         this.currentVehicle = null;
+        this.currentBrand = null;
         this.vehicles = [];
+        this.brands = [];
         this.isEditing = false;
+        this.isEditingBrand = false;
+        this.currentModule = 'vehiculos';
+        this.currentSubModule = null;
         this.searchTimeout = null;
         
         this.init();
@@ -32,14 +37,20 @@ class VictorApp {
             link.addEventListener('click', (e) => this.handleNavigation(e));
         });
         
-        // Vehicle buttons
-        document.getElementById('addVehicleBtn').addEventListener('click', () => this.showVehicleModal());
-        document.getElementById('addFirstVehicleBtn').addEventListener('click', () => this.showVehicleModal());
+        // Add buttons
+        document.getElementById('addBtn').addEventListener('click', () => this.showAddModal());
+        document.getElementById('addFirstBtn').addEventListener('click', () => this.showAddModal());
+        document.getElementById('addFirstBrandBtn').addEventListener('click', () => this.showBrandModal());
         
         // Modal events
         document.getElementById('modalClose').addEventListener('click', () => this.hideVehicleModal());
         document.getElementById('cancelBtn').addEventListener('click', () => this.hideVehicleModal());
         document.getElementById('vehicleForm').addEventListener('submit', (e) => this.handleVehicleSubmit(e));
+        
+        // Brand modal events
+        document.getElementById('brandModalClose').addEventListener('click', () => this.hideBrandModal());
+        document.getElementById('cancelBrandBtn').addEventListener('click', () => this.hideBrandModal());
+        document.getElementById('brandForm').addEventListener('submit', (e) => this.handleBrandSubmit(e));
         
         // Delete modal events
         document.getElementById('deleteModalClose').addEventListener('click', () => this.hideDeleteModal());
@@ -49,10 +60,15 @@ class VictorApp {
         // Search and filter
         document.getElementById('searchInput').addEventListener('input', (e) => this.handleSearch(e));
         document.getElementById('filterSelect').addEventListener('change', (e) => this.handleFilter(e));
+        document.getElementById('brandFilterSelect').addEventListener('change', (e) => this.handleBrandFilter(e));
         
         // Close modals on outside click
         document.getElementById('vehicleModal').addEventListener('click', (e) => {
             if (e.target.id === 'vehicleModal') this.hideVehicleModal();
+        });
+        
+        document.getElementById('brandModal').addEventListener('click', (e) => {
+            if (e.target.id === 'brandModal') this.hideBrandModal();
         });
         
         document.getElementById('deleteModal').addEventListener('click', (e) => {
@@ -109,6 +125,10 @@ class VictorApp {
     handleNavigation(e) {
         e.preventDefault();
         
+        const link = e.target.closest('.nav-link');
+        const module = link.dataset.module;
+        const submodule = link.dataset.submodule;
+        
         // Remover clase active de todos los elementos
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
@@ -117,8 +137,14 @@ class VictorApp {
         // Agregar clase active al elemento clickeado
         e.target.closest('.nav-item').classList.add('active');
         
-        const module = e.target.closest('.nav-link').dataset.module;
-        this.loadModule(module);
+        if (submodule) {
+            this.currentSubModule = submodule;
+            this.loadSubModule(submodule);
+        } else if (module) {
+            this.currentModule = module;
+            this.currentSubModule = null;
+            this.loadModule(module);
+        }
     }
     
     // Cargar módulo específico
@@ -133,10 +159,46 @@ class VictorApp {
         }
     }
     
+    // Cargar submódulo específico
+    loadSubModule(submodule) {
+        const pageTitle = document.querySelector('.page-title');
+        
+        switch (submodule) {
+            case 'marcas':
+                pageTitle.textContent = 'Marcas de Vehículos';
+                this.showBrandsModule();
+                break;
+        }
+    }
+    
     // Mostrar módulo de vehículos
     showVehiclesModule() {
-        // Por ahora solo cargamos vehículos
+        // Ocultar tabla de marcas y mostrar tabla de vehículos
+        document.getElementById('brandsTable').style.display = 'none';
+        document.getElementById('vehiclesTable').style.display = 'block';
+        document.getElementById('emptyBrandsState').style.display = 'none';
+        
+        // Actualizar botones
+        document.getElementById('addBtnText').textContent = 'Agregar Vehículo';
+        document.getElementById('addFirstBtnText').textContent = 'Agregar Primer Vehículo';
+        
+        // Cargar vehículos
         this.loadVehicles();
+    }
+    
+    // Mostrar módulo de marcas
+    showBrandsModule() {
+        // Ocultar tabla de vehículos y mostrar tabla de marcas
+        document.getElementById('vehiclesTable').style.display = 'none';
+        document.getElementById('brandsTable').style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
+        
+        // Actualizar botones
+        document.getElementById('addBtnText').textContent = 'Agregar Marca';
+        document.getElementById('addFirstBtnText').textContent = 'Agregar Primera Marca';
+        
+        // Cargar marcas
+        this.loadBrands();
     }
     
     
@@ -166,6 +228,37 @@ class VictorApp {
             this.showToast('Error al cargar vehículos: ' + error.message, 'error');
             this.vehicles = [];
             this.renderVehicles();
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
+    // Cargar marcas desde Supabase
+    async loadBrands() {
+        try {
+            this.showLoading(true);
+            
+            if (!supabase) {
+                throw new Error('Supabase no está inicializado');
+            }
+            
+            const { data, error } = await supabase
+                .from('marcas')
+                .select('*')
+                .order('nombre', { ascending: true });
+            
+            if (error) {
+                throw error;
+            }
+            
+            this.brands = data || [];
+            this.renderBrands();
+            
+        } catch (error) {
+            console.error('Error al cargar marcas:', error);
+            this.showToast('Error al cargar marcas: ' + error.message, 'error');
+            this.brands = [];
+            this.renderBrands();
         } finally {
             this.showLoading(false);
         }
@@ -214,6 +307,54 @@ class VictorApp {
         `).join('');
     }
     
+    // Renderizar tabla de marcas
+    renderBrands() {
+        const tbody = document.getElementById('brandsTableBody');
+        const emptyState = document.getElementById('emptyBrandsState');
+        const brandsTable = document.getElementById('brandsTable');
+        
+        if (this.brands.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.style.display = 'block';
+            brandsTable.style.display = 'none';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        brandsTable.style.display = 'block';
+        
+        tbody.innerHTML = this.brands.map(brand => `
+            <tr>
+                <td>${brand.id}</td>
+                <td><strong>${brand.nombre}</strong></td>
+                <td>
+                    <span class="vehicle-status status-${brand.estado}">
+                        ${brand.estado}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="app.editBrand(${brand.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteBrand(${brand.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Mostrar modal de agregar (vehículo o marca)
+    showAddModal() {
+        if (this.currentSubModule === 'marcas') {
+            this.showBrandModal();
+        } else {
+            this.showVehicleModal();
+        }
+    }
+    
     // Mostrar modal de vehículo
     showVehicleModal(vehicle = null) {
         const modal = document.getElementById('vehicleModal');
@@ -248,6 +389,47 @@ class VictorApp {
         
         this.currentVehicle = null;
         this.isEditing = false;
+    }
+    
+    // Mostrar modal de marca
+    showBrandModal(brand = null) {
+        const modal = document.getElementById('brandModal');
+        const modalTitle = document.getElementById('brandModalTitle');
+        const form = document.getElementById('brandForm');
+        
+        this.currentBrand = brand;
+        this.isEditingBrand = !!brand;
+        
+        if (this.isEditingBrand) {
+            modalTitle.textContent = 'Editar Marca';
+            this.populateBrandForm(brand);
+        } else {
+            modalTitle.textContent = 'Agregar Marca';
+            form.reset();
+        }
+        
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        
+        // Focus en el primer campo
+        setTimeout(() => {
+            document.getElementById('brandName').focus();
+        }, 100);
+    }
+    
+    // Ocultar modal de marca
+    hideBrandModal() {
+        const modal = document.getElementById('brandModal');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        
+        this.currentBrand = null;
+        this.isEditingBrand = false;
+    }
+    
+    // Llenar formulario de marca con datos
+    populateBrandForm(brand) {
+        document.getElementById('brandName').value = brand.nombre || '';
     }
     
     // Llenar formulario con datos del vehículo
@@ -312,6 +494,40 @@ class VictorApp {
         }
     }
     
+    // Manejar envío del formulario de marca
+    async handleBrandSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const brandData = Object.fromEntries(formData.entries());
+        
+        // Validar campos requeridos
+        if (!brandData.brandName) {
+            this.showToast('Por favor, ingresa el nombre de la marca', 'error');
+            return;
+        }
+        
+        
+        try {
+            this.showLoading(true);
+            
+            if (this.isEditingBrand) {
+                await this.updateBrand(brandData);
+            } else {
+                await this.createBrand(brandData);
+            }
+            
+            this.hideBrandModal();
+            this.loadBrands();
+            
+        } catch (error) {
+            console.error('Error al guardar marca:', error);
+            this.showToast('Error al guardar marca: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
     // Crear nuevo vehículo
     async createVehicle(vehicleData) {
         if (!supabase) {
@@ -362,6 +578,50 @@ class VictorApp {
         return data[0];
     }
     
+    // Crear nueva marca
+    async createBrand(brandData) {
+        if (!supabase) {
+            throw new Error('Supabase no está inicializado');
+        }
+        
+        const { data, error } = await supabase
+            .from('marcas')
+            .insert([{
+                nombre: brandData.brandName,
+                estado: 'activo'
+            }])
+            .select();
+        
+        if (error) {
+            throw error;
+        }
+        
+        this.showToast('Marca creada exitosamente', 'success');
+        return data[0];
+    }
+    
+    // Actualizar marca existente
+    async updateBrand(brandData) {
+        if (!supabase) {
+            throw new Error('Supabase no está inicializado');
+        }
+        
+        const { data, error } = await supabase
+            .from('marcas')
+            .update({
+                nombre: brandData.brandName
+            })
+            .eq('id', this.currentBrand.id)
+            .select();
+        
+        if (error) {
+            throw error;
+        }
+        
+        this.showToast('Marca actualizada exitosamente', 'success');
+        return data[0];
+    }
+    
     // Editar vehículo
     editVehicle(id) {
         const vehicle = this.vehicles.find(v => v.id === id);
@@ -379,9 +639,37 @@ class VictorApp {
         }
     }
     
+    // Editar marca
+    editBrand(id) {
+        const brand = this.brands.find(b => b.id === id);
+        if (brand) {
+            this.showBrandModal(brand);
+        }
+    }
+    
+    // Eliminar marca
+    deleteBrand(id) {
+        const brand = this.brands.find(b => b.id === id);
+        if (brand) {
+            this.currentBrand = brand;
+            this.showDeleteModal();
+        }
+    }
+    
     // Mostrar modal de confirmación de eliminación
     showDeleteModal() {
         const modal = document.getElementById('deleteModal');
+        const title = document.getElementById('deleteModalTitle');
+        const message = document.getElementById('deleteModalMessage');
+        
+        if (this.currentVehicle) {
+            title.textContent = 'Confirmar Eliminación de Vehículo';
+            message.textContent = `¿Estás seguro de que deseas eliminar el vehículo ${this.currentVehicle.placa}?`;
+        } else if (this.currentBrand) {
+            title.textContent = 'Confirmar Eliminación de Marca';
+            message.textContent = `¿Estás seguro de que deseas eliminar la marca ${this.currentBrand.nombre}?`;
+        }
+        
         modal.classList.add('show');
         modal.style.display = 'flex';
     }
@@ -393,11 +681,12 @@ class VictorApp {
         modal.style.display = 'none';
         
         this.currentVehicle = null;
+        this.currentBrand = null;
     }
     
     // Confirmar eliminación
     async confirmDelete() {
-        if (!this.currentVehicle) return;
+        if (!this.currentVehicle && !this.currentBrand) return;
         
         try {
             this.showLoading(true);
@@ -406,22 +695,39 @@ class VictorApp {
                 throw new Error('Supabase no está inicializado');
             }
             
-            const { error } = await supabase
-                .from('vehiculos')
-                .delete()
-                .eq('id', this.currentVehicle.id);
-            
-            if (error) {
-                throw error;
+            if (this.currentVehicle) {
+                const { error } = await supabase
+                    .from('vehiculos')
+                    .delete()
+                    .eq('id', this.currentVehicle.id);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                this.hideDeleteModal();
+                this.loadVehicles();
+                this.showToast('Vehículo eliminado exitosamente', 'success');
+                
+            } else if (this.currentBrand) {
+                const { error } = await supabase
+                    .from('marcas')
+                    .delete()
+                    .eq('id', this.currentBrand.id);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                this.hideDeleteModal();
+                this.loadBrands();
+                this.showToast('Marca eliminada exitosamente', 'success');
             }
             
-            this.hideDeleteModal();
-            this.loadVehicles();
-            this.showToast('Vehículo eliminado exitosamente', 'success');
-            
         } catch (error) {
-            console.error('Error al eliminar vehículo:', error);
-            this.showToast('Error al eliminar vehículo: ' + error.message, 'error');
+            console.error('Error al eliminar:', error);
+            const itemType = this.currentVehicle ? 'vehículo' : 'marca';
+            this.showToast(`Error al eliminar ${itemType}: ` + error.message, 'error');
         } finally {
             this.showLoading(false);
         }
@@ -434,7 +740,11 @@ class VictorApp {
         // Debounce search
         clearTimeout(this.searchTimeout);
         this.searchTimeout = setTimeout(() => {
-            this.filterVehicles(query);
+            if (this.currentSubModule === 'marcas') {
+                this.filterBrands(query);
+            } else {
+                this.filterVehicles(query);
+            }
         }, 300);
     }
     
@@ -442,6 +752,12 @@ class VictorApp {
     handleFilter(e) {
         const filter = e.target.value;
         this.filterVehicles('', filter);
+    }
+    
+    // Manejar filtro de marcas por estado
+    handleBrandFilter(e) {
+        const filter = e.target.value;
+        this.filterBrands('', filter);
     }
     
     // Filtrar vehículos
@@ -505,6 +821,67 @@ class VictorApp {
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="action-btn delete" onclick="app.deleteVehicle(${vehicle.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Filtrar marcas
+    filterBrands(searchQuery = '', statusFilter = '') {
+        let filteredBrands = [...this.brands];
+        
+        // Aplicar filtro de búsqueda
+        if (searchQuery) {
+            filteredBrands = filteredBrands.filter(brand => 
+                brand.nombre.toLowerCase().includes(searchQuery)
+            );
+        }
+        
+        // Aplicar filtro de estado
+        if (statusFilter) {
+            filteredBrands = filteredBrands.filter(brand => 
+                brand.estado === statusFilter
+            );
+        }
+        
+        // Renderizar marcas filtradas
+        this.renderFilteredBrands(filteredBrands);
+    }
+    
+    // Renderizar marcas filtradas
+    renderFilteredBrands(brands) {
+        const tbody = document.getElementById('brandsTableBody');
+        const emptyState = document.getElementById('emptyBrandsState');
+        const brandsTable = document.getElementById('brandsTable');
+        
+        if (brands.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.style.display = 'block';
+            brandsTable.style.display = 'none';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        brandsTable.style.display = 'block';
+        
+        tbody.innerHTML = brands.map(brand => `
+            <tr>
+                <td>${brand.id}</td>
+                <td><strong>${brand.nombre}</strong></td>
+                <td>
+                    <span class="vehicle-status status-${brand.estado}">
+                        ${brand.estado}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="app.editBrand(${brand.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteBrand(${brand.id})" title="Eliminar">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
