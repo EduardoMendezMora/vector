@@ -1087,6 +1087,10 @@ class VictorApp {
         const selector = document.getElementById('modelo');
         const currentValue = selector.value;
         
+        console.log('Llenando selector de modelos para marca ID:', marcaId);
+        console.log('Total modelos disponibles:', this.models.length);
+        console.log('Modelos disponibles:', this.models);
+        
         selector.innerHTML = '<option value="">Seleccionar modelo...</option>';
         
         if (marcaId) {
@@ -1094,13 +1098,18 @@ class VictorApp {
                 model.marca_id == marcaId && model.estado === 'activo'
             );
             
+            console.log('Modelos para marca', marcaId, ':', modelsForBrand);
+            
             modelsForBrand.forEach(model => {
                 const option = document.createElement('option');
                 option.value = model.id;
                 option.textContent = model.nombre;
                 selector.appendChild(option);
+                console.log('Agregado modelo:', model.nombre, 'ID:', model.id);
             });
         }
+        
+        console.log('Opciones en selector de modelo:', selector.options.length);
         
         if (currentValue) {
             selector.value = currentValue;
@@ -1112,6 +1121,9 @@ class VictorApp {
         const selector = document.getElementById('marca');
         const currentValue = selector.value;
         
+        console.log('Llenando selector de marcas. Total marcas:', this.brands.length);
+        console.log('Marcas disponibles:', this.brands);
+        
         selector.innerHTML = '<option value="">Seleccionar marca...</option>';
         
         this.brands.forEach(brand => {
@@ -1120,8 +1132,11 @@ class VictorApp {
                 option.value = brand.id;
                 option.textContent = brand.nombre;
                 selector.appendChild(option);
+                console.log('Agregada marca:', brand.nombre, 'ID:', brand.id);
             }
         });
+        
+        console.log('Opciones en selector de marca:', selector.options.length);
         
         if (currentValue) {
             selector.value = currentValue;
