@@ -516,9 +516,34 @@ class VictorApp {
         if (this.isEditing) {
             // Usar setTimeout para asegurar que los selectores estén listos
             setTimeout(() => {
-                this.populateForm(vehicle);
-                if (vehicle.marca_id) {
-                    this.populateModelsDropdown(vehicle.marca_id);
+                // Primero llenar los campos normales
+                this.populateFormFields(vehicle);
+                
+                // Luego establecer la marca
+                if (vehicle.marca_id || vehicle.marca) {
+                    const marcaId = vehicle.marca_id || vehicle.marca;
+                    console.log('Estableciendo marca con ID:', marcaId);
+                    const marcaSelect = document.getElementById('marca');
+                    if (marcaSelect) {
+                        marcaSelect.value = marcaId;
+                        console.log('Marca establecida:', marcaSelect.value);
+                        
+                        // Cargar modelos de esta marca
+                        this.populateModelsDropdown(marcaId);
+                        
+                        // Establecer el modelo después de cargar las opciones
+                        setTimeout(() => {
+                            if (vehicle.modelo_id || vehicle.modelo) {
+                                const modeloId = vehicle.modelo_id || vehicle.modelo;
+                                console.log('Estableciendo modelo con ID:', modeloId);
+                                const modeloSelect = document.getElementById('modelo');
+                                if (modeloSelect) {
+                                    modeloSelect.value = modeloId;
+                                    console.log('Modelo establecido:', modeloSelect.value);
+                                }
+                            }
+                        }, 50);
+                    }
                 }
             }, 100);
         }
@@ -667,7 +692,26 @@ class VictorApp {
         }
     }
     
-    // Llenar formulario con datos del vehículo
+    // Llenar campos normales del formulario (sin selectores)
+    populateFormFields(vehicle) {
+        console.log('Llenando campos del formulario con vehículo:', vehicle);
+        
+        const fields = [
+            'placa', 'año', 'carroceria', 
+            'cilindrada', 'cilindros', 'combustible', 'transmision', 
+            'traccion', 'color', 'vin'
+        ];
+        
+        // Llenar campos normales
+        fields.forEach(field => {
+            const element = document.getElementById(field);
+            if (element && vehicle[field]) {
+                element.value = vehicle[field];
+            }
+        });
+    }
+    
+    // Llenar formulario con datos del vehículo (función original mantenida para compatibilidad)
     populateForm(vehicle) {
         console.log('Llenando formulario con vehículo:', vehicle);
         
