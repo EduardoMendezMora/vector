@@ -206,10 +206,8 @@ class VictorApp {
         document.getElementById('addBtnText').textContent = 'Agregar Vehículo';
         document.getElementById('addFirstBtnText').textContent = 'Agregar Primer Vehículo';
         
-        // Cargar vehículos, marcas y modelos
-        this.loadVehicles();
-        this.loadBrands();
-        this.loadModels();
+        // Cargar datos en orden correcto
+        this.loadInitialData();
     }
     
     // Mostrar módulo de marcas
@@ -226,7 +224,7 @@ class VictorApp {
         document.getElementById('addFirstBtnText').textContent = 'Agregar Primera Marca';
         
         // Cargar marcas
-        this.loadBrands();
+        this.loadBrands(true);
     }
     
     // Mostrar módulo de modelos
@@ -243,9 +241,33 @@ class VictorApp {
         document.getElementById('addFirstBtnText').textContent = 'Agregar Primer Modelo';
         
         // Cargar modelos
-        this.loadModels();
+        this.loadModels(true);
     }
     
+    // Cargar datos iniciales en orden correcto
+    async loadInitialData() {
+        try {
+            console.log('Iniciando carga de datos...');
+            
+            // Primero cargar marcas
+            await this.loadBrands();
+            console.log('Marcas cargadas:', this.brands.length);
+            
+            // Luego cargar modelos
+            await this.loadModels();
+            console.log('Modelos cargados:', this.models.length);
+            
+            // Finalmente cargar vehículos
+            await this.loadVehicles();
+            console.log('Vehículos cargados:', this.vehicles.length);
+            
+            console.log('Carga de datos completada');
+            
+        } catch (error) {
+            console.error('Error al cargar datos iniciales:', error);
+            this.showToast('Error al cargar datos: ' + error.message, 'error');
+        }
+    }
     
     // Cargar vehículos desde Supabase
     async loadVehicles() {
@@ -289,9 +311,9 @@ class VictorApp {
     }
     
     // Cargar marcas desde Supabase
-    async loadBrands() {
+    async loadBrands(showLoading = false) {
         try {
-            this.showLoading(true);
+            if (showLoading) this.showLoading(true);
             
             if (!supabase) {
                 throw new Error('Supabase no está inicializado');
@@ -307,22 +329,28 @@ class VictorApp {
             }
             
             this.brands = data || [];
-            this.renderBrands();
+            console.log('Marcas cargadas desde Supabase:', this.brands.length);
+            
+            if (this.currentSubModule === 'marcas') {
+                this.renderBrands();
+            }
             
         } catch (error) {
             console.error('Error al cargar marcas:', error);
             this.showToast('Error al cargar marcas: ' + error.message, 'error');
             this.brands = [];
-            this.renderBrands();
+            if (this.currentSubModule === 'marcas') {
+                this.renderBrands();
+            }
         } finally {
-            this.showLoading(false);
+            if (showLoading) this.showLoading(false);
         }
     }
     
     // Cargar modelos desde Supabase
-    async loadModels() {
+    async loadModels(showLoading = false) {
         try {
-            this.showLoading(true);
+            if (showLoading) this.showLoading(true);
             
             if (!supabase) {
                 throw new Error('Supabase no está inicializado');
@@ -344,16 +372,22 @@ class VictorApp {
             }
             
             this.models = data || [];
-            this.renderModels();
-            this.populateModelBrandFilter();
+            console.log('Modelos cargados desde Supabase:', this.models.length);
+            
+            if (this.currentSubModule === 'modelos') {
+                this.renderModels();
+                this.populateModelBrandFilter();
+            }
             
         } catch (error) {
             console.error('Error al cargar modelos:', error);
             this.showToast('Error al cargar modelos: ' + error.message, 'error');
             this.models = [];
-            this.renderModels();
+            if (this.currentSubModule === 'modelos') {
+                this.renderModels();
+            }
         } finally {
-            this.showLoading(false);
+            if (showLoading) this.showLoading(false);
         }
     }
     
@@ -819,7 +853,7 @@ class VictorApp {
             }
             
             this.hideBrandModal();
-            this.loadBrands();
+            this.loadBrands(true);
             
         } catch (error) {
             console.error('Error al guardar marca:', error);
@@ -1002,7 +1036,7 @@ class VictorApp {
             }
             
             this.hideModelModal();
-            this.loadModels();
+            this.loadModels(true);
             
         } catch (error) {
             console.error('Error al guardar modelo:', error);
@@ -1211,7 +1245,7 @@ class VictorApp {
                 }
                 
                 this.hideDeleteModal();
-                this.loadBrands();
+                this.loadBrands(true);
                 this.showToast('Marca eliminada exitosamente', 'success');
                 
             } else if (this.currentModel) {
@@ -1225,7 +1259,7 @@ class VictorApp {
                 }
                 
                 this.hideDeleteModal();
-                this.loadModels();
+                this.loadModels(true);
                 this.showToast('Modelo eliminado exitosamente', 'success');
             }
             
