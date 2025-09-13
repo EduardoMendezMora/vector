@@ -534,7 +534,7 @@ class VictorApp {
     }
     
     // Mostrar modal de vehículo
-    showVehicleModal(vehicle = null) {
+    async showVehicleModal(vehicle = null) {
         const modal = document.getElementById('vehicleModal');
         const modalTitle = document.getElementById('modalTitle');
         const form = document.getElementById('vehicleForm');
@@ -547,6 +547,12 @@ class VictorApp {
         } else {
             modalTitle.textContent = 'Agregar Vehículo';
             form.reset();
+        }
+        
+        // Asegurar que los datos estén cargados antes de abrir el modal
+        if (this.brands.length === 0 || this.models.length === 0) {
+            console.log('Datos no cargados, cargando...');
+            await this.loadInitialData();
         }
         
         // Llenar selectores
