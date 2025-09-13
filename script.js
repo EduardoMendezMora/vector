@@ -258,7 +258,17 @@ class VictorApp {
             
             const { data, error } = await supabase
                 .from('vehiculos')
-                .select('*')
+                .select(`
+                    *,
+                    marcas (
+                        id,
+                        nombre
+                    ),
+                    modelos (
+                        id,
+                        nombre
+                    )
+                `)
                 .order('created_at', { ascending: false });
             
             if (error) {
@@ -366,8 +376,8 @@ class VictorApp {
         tbody.innerHTML = this.vehicles.map(vehicle => `
             <tr>
                 <td><strong>${vehicle.placa}</strong></td>
-                <td>${vehicle.marca}</td>
-                <td>${vehicle.modelo}</td>
+                <td>${vehicle.marcas?.nombre || '-'}</td>
+                <td>${vehicle.modelos?.nombre || '-'}</td>
                 <td>${vehicle.año}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${vehicle.combustible || '-'}</td>
@@ -499,6 +509,11 @@ class VictorApp {
         
         // Llenar selectores
         this.populateBrandsDropdown();
+        
+        // Si está editando, cargar modelos de la marca seleccionada
+        if (this.isEditing && vehicle.marca) {
+            this.populateModelsDropdown(vehicle.marca);
+        }
         
         modal.classList.add('show');
         modal.style.display = 'flex';
@@ -1206,8 +1221,8 @@ class VictorApp {
         tbody.innerHTML = vehicles.map(vehicle => `
             <tr>
                 <td><strong>${vehicle.placa}</strong></td>
-                <td>${vehicle.marca}</td>
-                <td>${vehicle.modelo}</td>
+                <td>${vehicle.marcas?.nombre || '-'}</td>
+                <td>${vehicle.modelos?.nombre || '-'}</td>
                 <td>${vehicle.año}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${vehicle.combustible || '-'}</td>
