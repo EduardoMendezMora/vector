@@ -511,8 +511,8 @@ class VictorApp {
         this.populateBrandsDropdown();
         
         // Si está editando, cargar modelos de la marca seleccionada
-        if (this.isEditing && vehicle.marca) {
-            this.populateModelsDropdown(vehicle.marca);
+        if (this.isEditing && vehicle.marca_id) {
+            this.populateModelsDropdown(vehicle.marca_id);
         }
         
         modal.classList.add('show');
@@ -665,17 +665,27 @@ class VictorApp {
     // Llenar formulario con datos del vehículo
     populateForm(vehicle) {
         const fields = [
-            'placa', 'marca', 'modelo', 'año', 'carroceria', 
+            'placa', 'año', 'carroceria', 
             'cilindrada', 'cilindros', 'combustible', 'transmision', 
             'traccion', 'color', 'vin'
         ];
         
+        // Llenar campos normales
         fields.forEach(field => {
             const element = document.getElementById(field);
             if (element && vehicle[field]) {
                 element.value = vehicle[field];
             }
         });
+        
+        // Llenar selectores de marca y modelo con los IDs
+        if (vehicle.marca_id) {
+            document.getElementById('marca').value = vehicle.marca_id;
+        }
+        
+        if (vehicle.modelo_id) {
+            document.getElementById('modelo').value = vehicle.modelo_id;
+        }
     }
     
     // Manejar envío del formulario
@@ -767,10 +777,18 @@ class VictorApp {
         const { data, error } = await supabase
             .from('vehiculos')
             .insert([{
-                ...vehicleData,
+                placa: vehicleData.placa,
+                marca_id: parseInt(vehicleData.marca),
+                modelo_id: parseInt(vehicleData.modelo),
                 año: parseInt(vehicleData.año),
+                carroceria: vehicleData.carroceria,
                 cilindrada: vehicleData.cilindrada ? parseInt(vehicleData.cilindrada) : null,
                 cilindros: vehicleData.cilindros ? parseInt(vehicleData.cilindros) : null,
+                combustible: vehicleData.combustible,
+                transmision: vehicleData.transmision,
+                traccion: vehicleData.traccion,
+                color: vehicleData.color,
+                vin: vehicleData.vin,
                 estado: 'activo'
             }])
             .select();
@@ -792,10 +810,19 @@ class VictorApp {
         const { data, error } = await supabase
             .from('vehiculos')
             .update({
-                ...vehicleData,
+                placa: vehicleData.placa,
+                marca_id: parseInt(vehicleData.marca),
+                modelo_id: parseInt(vehicleData.modelo),
                 año: parseInt(vehicleData.año),
+                carroceria: vehicleData.carroceria,
                 cilindrada: vehicleData.cilindrada ? parseInt(vehicleData.cilindrada) : null,
-                cilindros: vehicleData.cilindros ? parseInt(vehicleData.cilindros) : null
+                cilindros: vehicleData.cilindros ? parseInt(vehicleData.cilindros) : null,
+                combustible: vehicleData.combustible,
+                transmision: vehicleData.transmision,
+                traccion: vehicleData.traccion,
+                color: vehicleData.color,
+                vin: vehicleData.vin,
+                updated_at: new Date().toISOString()
             })
             .eq('id', this.currentVehicle.id)
             .select();
