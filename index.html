@@ -41,6 +41,12 @@
                                     <span class="nav-text">Modelos</span>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" data-submodule="carrocerias">
+                                    <i class="fas fa-shapes"></i>
+                                    <span class="nav-text">Carrocerías</span>
+                                </a>
+                            </li>
                         </ul>
                     </li>
                 </ul>
@@ -168,6 +174,37 @@
                     </div>
                 </div>
 
+                <!-- Carrocerías Table -->
+                <div class="table-container" id="carroceriasTable" style="display: none;">
+                    <div class="table-header">
+                        <h3>Lista de Carrocerías</h3>
+                        <div class="table-actions">
+                            <select id="carroceriaFilterSelect" class="filter-select">
+                                <option value="">Todos los estados</option>
+                                <option value="activo">Activos</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="table-wrapper">
+                        <table class="carrocerias-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Descripción</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="carroceriasTableBody">
+                                <!-- Carrocerías will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Loading State -->
                 <div class="loading" id="loadingState" style="display: none;">
                     <i class="fas fa-spinner fa-spin"></i>
@@ -204,6 +241,17 @@
                     <button class="btn btn-primary" id="addFirstModelBtn">
                         <i class="fas fa-plus"></i>
                         Agregar Primer Modelo
+                    </button>
+                </div>
+
+                <!-- Empty State for Carrocerías -->
+                <div class="empty-state" id="emptyCarroceriasState" style="display: none;">
+                    <i class="fas fa-shapes"></i>
+                    <h3>No hay carrocerías registradas</h3>
+                    <p>Comienza agregando tu primera carrocería de vehículo</p>
+                    <button class="btn btn-primary" id="addFirstCarroceriaBtn">
+                        <i class="fas fa-plus"></i>
+                        Agregar Primera Carrocería
                     </button>
                 </div>
             </div>
@@ -249,14 +297,7 @@
                     <div class="form-group">
                         <label for="carroceria">Carrocería</label>
                         <select id="carroceria" name="carroceria">
-                            <option value="">Seleccionar...</option>
-                            <option value="sedan">Sedán</option>
-                            <option value="hatchback">Hatchback</option>
-                            <option value="suv">SUV</option>
-                            <option value="pickup">Pickup</option>
-                            <option value="van">Van</option>
-                            <option value="coupe">Coupé</option>
-                            <option value="convertible">Convertible</option>
+                            <option value="">Seleccionar carrocería...</option>
                         </select>
                     </div>
                     
@@ -391,6 +432,40 @@
                     <button type="submit" class="btn btn-primary" id="saveModelBtn">
                         <i class="fas fa-save"></i>
                         Guardar Modelo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Carrocería Modal -->
+    <div class="modal" id="carroceriaModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="carroceriaModalTitle">Agregar Carrocería</h3>
+                <button class="modal-close" id="carroceriaModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form class="carroceria-form" id="carroceriaForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="carroceriaName">Nombre de la Carrocería *</label>
+                        <input type="text" id="carroceriaName" name="carroceriaName" required maxlength="100">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="carroceriaDescripcion">Descripción</label>
+                        <textarea id="carroceriaDescripcion" name="carroceriaDescripcion" rows="3" maxlength="255"></textarea>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelCarroceriaBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="saveCarroceriaBtn">
+                        <i class="fas fa-save"></i>
+                        Guardar Carrocería
                     </button>
                 </div>
             </form>

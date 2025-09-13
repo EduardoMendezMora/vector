@@ -6,12 +6,15 @@ class VictorApp {
         this.currentVehicle = null;
         this.currentBrand = null;
         this.currentModel = null;
+        this.currentCarroceria = null;
         this.vehicles = [];
         this.brands = [];
         this.models = [];
+        this.carrocerias = [];
         this.isEditing = false;
         this.isEditingBrand = false;
         this.isEditingModel = false;
+        this.isEditingCarroceria = false;
         this.currentModule = 'vehiculos';
         this.currentSubModule = null;
         this.searchTimeout = null;
@@ -45,6 +48,7 @@ class VictorApp {
         document.getElementById('addFirstBtn').addEventListener('click', () => this.showAddModal());
         document.getElementById('addFirstBrandBtn').addEventListener('click', () => this.showBrandModal());
         document.getElementById('addFirstModelBtn').addEventListener('click', () => this.showModelModal());
+        document.getElementById('addFirstCarroceriaBtn').addEventListener('click', () => this.showCarroceriaModal());
         
         // Modal events
         document.getElementById('modalClose').addEventListener('click', () => this.hideVehicleModal());
@@ -61,6 +65,11 @@ class VictorApp {
         document.getElementById('cancelModelBtn').addEventListener('click', () => this.hideModelModal());
         document.getElementById('modelForm').addEventListener('submit', (e) => this.handleModelSubmit(e));
         
+        // Carrocería modal events
+        document.getElementById('carroceriaModalClose').addEventListener('click', () => this.hideCarroceriaModal());
+        document.getElementById('cancelCarroceriaBtn').addEventListener('click', () => this.hideCarroceriaModal());
+        document.getElementById('carroceriaForm').addEventListener('submit', (e) => this.handleCarroceriaSubmit(e));
+        
         // Delete modal events
         document.getElementById('deleteModalClose').addEventListener('click', () => this.hideDeleteModal());
         document.getElementById('cancelDeleteBtn').addEventListener('click', () => this.hideDeleteModal());
@@ -72,6 +81,7 @@ class VictorApp {
         document.getElementById('brandFilterSelect').addEventListener('change', (e) => this.handleBrandFilter(e));
         document.getElementById('modelBrandFilterSelect').addEventListener('change', (e) => this.handleModelBrandFilter(e));
         document.getElementById('modelFilterSelect').addEventListener('change', (e) => this.handleModelFilter(e));
+        document.getElementById('carroceriaFilterSelect').addEventListener('change', (e) => this.handleCarroceriaFilter(e));
         
         // Vehicle form events
         document.getElementById('marca').addEventListener('change', (e) => this.handleMarcaChange(e));
@@ -87,6 +97,10 @@ class VictorApp {
         
         document.getElementById('modelModal').addEventListener('click', (e) => {
             if (e.target.id === 'modelModal') this.hideModelModal();
+        });
+        
+        document.getElementById('carroceriaModal').addEventListener('click', (e) => {
+            if (e.target.id === 'carroceriaModal') this.hideCarroceriaModal();
         });
         
         document.getElementById('deleteModal').addEventListener('click', (e) => {
@@ -190,6 +204,10 @@ class VictorApp {
                 pageTitle.textContent = 'Modelos de Vehículos';
                 this.showModelsModule();
                 break;
+            case 'carrocerias':
+                pageTitle.textContent = 'Carrocerías de Vehículos';
+                this.showCarroceriasModule();
+                break;
         }
     }
     
@@ -198,9 +216,11 @@ class VictorApp {
         // Ocultar otras tablas y mostrar tabla de vehículos
         document.getElementById('brandsTable').style.display = 'none';
         document.getElementById('modelsTable').style.display = 'none';
+        document.getElementById('carroceriasTable').style.display = 'none';
         document.getElementById('vehiclesTable').style.display = 'block';
         document.getElementById('emptyBrandsState').style.display = 'none';
         document.getElementById('emptyModelsState').style.display = 'none';
+        document.getElementById('emptyCarroceriasState').style.display = 'none';
         
         // Actualizar botones
         document.getElementById('addBtnText').textContent = 'Agregar Vehículo';
@@ -215,9 +235,11 @@ class VictorApp {
         // Ocultar otras tablas y mostrar tabla de marcas
         document.getElementById('vehiclesTable').style.display = 'none';
         document.getElementById('modelsTable').style.display = 'none';
+        document.getElementById('carroceriasTable').style.display = 'none';
         document.getElementById('brandsTable').style.display = 'block';
         document.getElementById('emptyState').style.display = 'none';
         document.getElementById('emptyModelsState').style.display = 'none';
+        document.getElementById('emptyCarroceriasState').style.display = 'none';
         
         // Actualizar botones
         document.getElementById('addBtnText').textContent = 'Agregar Marca';
@@ -232,9 +254,11 @@ class VictorApp {
         // Ocultar otras tablas y mostrar tabla de modelos
         document.getElementById('vehiclesTable').style.display = 'none';
         document.getElementById('brandsTable').style.display = 'none';
+        document.getElementById('carroceriasTable').style.display = 'none';
         document.getElementById('modelsTable').style.display = 'block';
         document.getElementById('emptyState').style.display = 'none';
         document.getElementById('emptyBrandsState').style.display = 'none';
+        document.getElementById('emptyCarroceriasState').style.display = 'none';
         
         // Actualizar botones
         document.getElementById('addBtnText').textContent = 'Agregar Modelo';
@@ -242,6 +266,25 @@ class VictorApp {
         
         // Cargar modelos
         this.loadModels(true);
+    }
+    
+    // Mostrar módulo de carrocerías
+    showCarroceriasModule() {
+        // Ocultar otras tablas y mostrar tabla de carrocerías
+        document.getElementById('vehiclesTable').style.display = 'none';
+        document.getElementById('brandsTable').style.display = 'none';
+        document.getElementById('modelsTable').style.display = 'none';
+        document.getElementById('carroceriasTable').style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('emptyBrandsState').style.display = 'none';
+        document.getElementById('emptyModelsState').style.display = 'none';
+        
+        // Actualizar botones
+        document.getElementById('addBtnText').textContent = 'Agregar Carrocería';
+        document.getElementById('addFirstBtnText').textContent = 'Agregar Primera Carrocería';
+        
+        // Cargar carrocerías
+        this.loadCarrocerias(true);
     }
     
     // Cargar datos iniciales en orden correcto
@@ -265,6 +308,10 @@ class VictorApp {
             // Luego cargar modelos
             await this.loadModels();
             console.log('Modelos cargados:', this.models.length);
+            
+            // Cargar carrocerías
+            await this.loadCarrocerias();
+            console.log('Carrocerías cargadas:', this.carrocerias.length);
             
             // Finalmente cargar vehículos
             await this.loadVehicles();
@@ -296,6 +343,10 @@ class VictorApp {
                         nombre
                     ),
                     modelos (
+                        id,
+                        nombre
+                    ),
+                    carrocerias (
                         id,
                         nombre
                     )
@@ -400,6 +451,43 @@ class VictorApp {
         }
     }
     
+    // Cargar carrocerías desde Supabase
+    async loadCarrocerias(showLoading = false) {
+        try {
+            if (showLoading) this.showLoading(true);
+            
+            if (!supabase) {
+                throw new Error('Supabase no está inicializado');
+            }
+            
+            const { data, error } = await supabase
+                .from('carrocerias')
+                .select('*')
+                .order('nombre', { ascending: true });
+            
+            if (error) {
+                throw error;
+            }
+            
+            this.carrocerias = data || [];
+            console.log('Carrocerías cargadas desde Supabase:', this.carrocerias.length);
+            
+            if (this.currentSubModule === 'carrocerias') {
+                this.renderCarrocerias();
+            }
+            
+        } catch (error) {
+            console.error('Error al cargar carrocerías:', error);
+            this.showToast('Error al cargar carrocerías: ' + error.message, 'error');
+            this.carrocerias = [];
+            if (this.currentSubModule === 'carrocerias') {
+                this.renderCarrocerias();
+            }
+        } finally {
+            if (showLoading) this.showLoading(false);
+        }
+    }
+    
     // Renderizar tabla de vehículos
     renderVehicles() {
         const tbody = document.getElementById('vehiclesTableBody');
@@ -422,6 +510,7 @@ class VictorApp {
                 <td>${vehicle.marcas?.nombre || '-'}</td>
                 <td>${vehicle.modelos?.nombre || '-'}</td>
                 <td>${vehicle.año}</td>
+                <td>${vehicle.carrocerias?.nombre || '-'}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${vehicle.combustible || '-'}</td>
                 <td>
@@ -522,12 +611,54 @@ class VictorApp {
         `).join('');
     }
     
-    // Mostrar modal de agregar (vehículo, marca o modelo)
+    // Renderizar tabla de carrocerías
+    renderCarrocerias() {
+        const tbody = document.getElementById('carroceriasTableBody');
+        const emptyState = document.getElementById('emptyCarroceriasState');
+        const carroceriasTable = document.getElementById('carroceriasTable');
+        
+        if (this.carrocerias.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.style.display = 'block';
+            carroceriasTable.style.display = 'none';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        carroceriasTable.style.display = 'block';
+        
+        tbody.innerHTML = this.carrocerias.map(carroceria => `
+            <tr>
+                <td>${carroceria.id}</td>
+                <td><strong>${carroceria.nombre}</strong></td>
+                <td>${carroceria.descripcion || '-'}</td>
+                <td>
+                    <span class="vehicle-status status-${carroceria.estado}">
+                        ${carroceria.estado}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="app.editCarroceria(${carroceria.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteCarroceria(${carroceria.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Mostrar modal de agregar (vehículo, marca, modelo o carrocería)
     showAddModal() {
         if (this.currentSubModule === 'marcas') {
             this.showBrandModal();
         } else if (this.currentSubModule === 'modelos') {
             this.showModelModal();
+        } else if (this.currentSubModule === 'carrocerias') {
+            this.showCarroceriaModal();
         } else {
             this.showVehicleModal();
         }
@@ -557,6 +688,7 @@ class VictorApp {
         
         // Llenar selectores
         this.populateBrandsDropdown();
+        this.populateCarroceriasDropdown();
         
         modal.classList.add('show');
         modal.style.display = 'flex';
@@ -693,6 +825,48 @@ class VictorApp {
         this.isEditingModel = false;
     }
     
+    // Mostrar modal de carrocería
+    showCarroceriaModal(carroceria = null) {
+        const modal = document.getElementById('carroceriaModal');
+        const modalTitle = document.getElementById('carroceriaModalTitle');
+        const form = document.getElementById('carroceriaForm');
+        
+        this.currentCarroceria = carroceria;
+        this.isEditingCarroceria = !!carroceria;
+        
+        if (this.isEditingCarroceria) {
+            modalTitle.textContent = 'Editar Carrocería';
+            this.populateCarroceriaForm(carroceria);
+        } else {
+            modalTitle.textContent = 'Agregar Carrocería';
+            form.reset();
+        }
+        
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        
+        // Focus en el primer campo
+        setTimeout(() => {
+            document.getElementById('carroceriaName').focus();
+        }, 100);
+    }
+    
+    // Ocultar modal de carrocería
+    hideCarroceriaModal() {
+        const modal = document.getElementById('carroceriaModal');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        
+        this.currentCarroceria = null;
+        this.isEditingCarroceria = false;
+    }
+    
+    // Llenar formulario de carrocería con datos
+    populateCarroceriaForm(carroceria) {
+        document.getElementById('carroceriaName').value = carroceria.nombre || '';
+        document.getElementById('carroceriaDescripcion').value = carroceria.descripcion || '';
+    }
+    
     // Llenar formulario de modelo con datos
     populateModelForm(model) {
         document.getElementById('modelBrand').value = model.marca_id || '';
@@ -746,7 +920,7 @@ class VictorApp {
         console.log('Llenando campos del formulario con vehículo:', vehicle);
         
         const fields = [
-            'placa', 'año', 'carroceria', 
+            'placa', 'año', 
             'cilindrada', 'cilindros', 'combustible', 'transmision', 
             'traccion', 'color', 'vin'
         ];
@@ -758,6 +932,16 @@ class VictorApp {
                 element.value = vehicle[field];
             }
         });
+        
+        // Llenar carrocería con ID
+        if (vehicle.carroceria_id) {
+            console.log('Estableciendo carrocería_id:', vehicle.carroceria_id);
+            const carroceriaSelect = document.getElementById('carroceria');
+            if (carroceriaSelect) {
+                carroceriaSelect.value = vehicle.carroceria_id;
+                console.log('Carrocería establecida:', carroceriaSelect.value);
+            }
+        }
     }
     
     // Llenar formulario con datos del vehículo (función original mantenida para compatibilidad)
@@ -891,7 +1075,7 @@ class VictorApp {
                 marca_id: parseInt(vehicleData.marca),
                 modelo_id: parseInt(vehicleData.modelo),
                 año: parseInt(vehicleData.año),
-                carroceria: vehicleData.carroceria,
+                carroceria_id: vehicleData.carroceria ? parseInt(vehicleData.carroceria) : null,
                 cilindrada: vehicleData.cilindrada ? parseInt(vehicleData.cilindrada) : null,
                 cilindros: vehicleData.cilindros ? parseInt(vehicleData.cilindros) : null,
                 combustible: vehicleData.combustible,
@@ -924,7 +1108,7 @@ class VictorApp {
                 marca_id: parseInt(vehicleData.marca),
                 modelo_id: parseInt(vehicleData.modelo),
                 año: parseInt(vehicleData.año),
-                carroceria: vehicleData.carroceria,
+                carroceria_id: vehicleData.carroceria ? parseInt(vehicleData.carroceria) : null,
                 cilindrada: vehicleData.cilindrada ? parseInt(vehicleData.cilindrada) : null,
                 cilindros: vehicleData.cilindros ? parseInt(vehicleData.cilindros) : null,
                 combustible: vehicleData.combustible,
@@ -1125,6 +1309,103 @@ class VictorApp {
         }
     }
     
+    // Manejar envío del formulario de carrocería
+    async handleCarroceriaSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const carroceriaData = Object.fromEntries(formData.entries());
+        
+        // Validar campos requeridos
+        if (!carroceriaData.carroceriaName) {
+            this.showToast('Por favor, ingresa el nombre de la carrocería', 'error');
+            return;
+        }
+        
+        try {
+            this.showLoading(true);
+            
+            if (this.isEditingCarroceria) {
+                await this.updateCarroceria(carroceriaData);
+            } else {
+                await this.createCarroceria(carroceriaData);
+            }
+            
+            this.hideCarroceriaModal();
+            this.loadCarrocerias(true);
+            
+        } catch (error) {
+            console.error('Error al guardar carrocería:', error);
+            this.showToast('Error al guardar carrocería: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
+    // Crear nueva carrocería
+    async createCarroceria(carroceriaData) {
+        if (!supabase) {
+            throw new Error('Supabase no está inicializado');
+        }
+        
+        const { data, error } = await supabase
+            .from('carrocerias')
+            .insert([{
+                nombre: carroceriaData.carroceriaName,
+                descripcion: carroceriaData.carroceriaDescripcion || null,
+                estado: 'activo'
+            }])
+            .select();
+        
+        if (error) {
+            throw error;
+        }
+        
+        this.showToast('Carrocería creada exitosamente', 'success');
+        return data[0];
+    }
+    
+    // Actualizar carrocería existente
+    async updateCarroceria(carroceriaData) {
+        if (!supabase) {
+            throw new Error('Supabase no está inicializado');
+        }
+        
+        const { data, error } = await supabase
+            .from('carrocerias')
+            .update({
+                nombre: carroceriaData.carroceriaName,
+                descripcion: carroceriaData.carroceriaDescripcion || null,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', this.currentCarroceria.id)
+            .select();
+        
+        if (error) {
+            throw error;
+        }
+        
+        this.showToast('Carrocería actualizada exitosamente', 'success');
+        return data[0];
+    }
+    
+    // Editar carrocería
+    editCarroceria(id) {
+        const carroceria = this.carrocerias.find(c => c.id === id);
+        if (carroceria) {
+            this.showCarroceriaModal(carroceria);
+        }
+    }
+    
+    // Eliminar carrocería
+    deleteCarroceria(id) {
+        const carroceria = this.carrocerias.find(c => c.id === id);
+        if (carroceria) {
+            this.currentCarroceria = carroceria;
+            this.showDeleteModal();
+        }
+    }
+    
     // Manejar cambio de marca en vehículo
     handleMarcaChange(e) {
         const marcaId = e.target.value;
@@ -1192,6 +1473,33 @@ class VictorApp {
         }
     }
     
+    // Llenar selector de carrocerías en el modal de vehículo
+    populateCarroceriasDropdown() {
+        const selector = document.getElementById('carroceria');
+        const currentValue = selector.value;
+        
+        console.log('Llenando selector de carrocerías. Total carrocerías:', this.carrocerias.length);
+        console.log('Carrocerías disponibles:', this.carrocerias);
+        
+        selector.innerHTML = '<option value="">Seleccionar carrocería...</option>';
+        
+        this.carrocerias.forEach(carroceria => {
+            if (carroceria.estado === 'activo') {
+                const option = document.createElement('option');
+                option.value = carroceria.id;
+                option.textContent = carroceria.nombre;
+                selector.appendChild(option);
+                console.log('Agregada carrocería:', carroceria.nombre, 'ID:', carroceria.id);
+            }
+        });
+        
+        console.log('Opciones en selector de carrocería:', selector.options.length);
+        
+        if (currentValue) {
+            selector.value = currentValue;
+        }
+    }
+    
     // Mostrar modal de confirmación de eliminación
     showDeleteModal() {
         const modal = document.getElementById('deleteModal');
@@ -1207,6 +1515,9 @@ class VictorApp {
         } else if (this.currentModel) {
             title.textContent = 'Confirmar Eliminación de Modelo';
             message.textContent = `¿Estás seguro de que deseas eliminar el modelo ${this.currentModel.nombre}?`;
+        } else if (this.currentCarroceria) {
+            title.textContent = 'Confirmar Eliminación de Carrocería';
+            message.textContent = `¿Estás seguro de que deseas eliminar la carrocería ${this.currentCarroceria.nombre}?`;
         }
         
         modal.classList.add('show');
@@ -1222,11 +1533,12 @@ class VictorApp {
         this.currentVehicle = null;
         this.currentBrand = null;
         this.currentModel = null;
+        this.currentCarroceria = null;
     }
     
     // Confirmar eliminación
     async confirmDelete() {
-        if (!this.currentVehicle && !this.currentBrand && !this.currentModel) return;
+        if (!this.currentVehicle && !this.currentBrand && !this.currentModel && !this.currentCarroceria) return;
         
         try {
             this.showLoading(true);
@@ -1276,11 +1588,25 @@ class VictorApp {
                 this.hideDeleteModal();
                 this.loadModels(true);
                 this.showToast('Modelo eliminado exitosamente', 'success');
+                
+            } else if (this.currentCarroceria) {
+                const { error } = await supabase
+                    .from('carrocerias')
+                    .delete()
+                    .eq('id', this.currentCarroceria.id);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                this.hideDeleteModal();
+                this.loadCarrocerias(true);
+                this.showToast('Carrocería eliminada exitosamente', 'success');
             }
             
         } catch (error) {
             console.error('Error al eliminar:', error);
-            const itemType = this.currentVehicle ? 'vehículo' : (this.currentBrand ? 'marca' : 'modelo');
+            const itemType = this.currentVehicle ? 'vehículo' : (this.currentBrand ? 'marca' : (this.currentModel ? 'modelo' : 'carrocería'));
             this.showToast(`Error al eliminar ${itemType}: ` + error.message, 'error');
         } finally {
             this.showLoading(false);
@@ -1298,6 +1624,8 @@ class VictorApp {
                 this.filterBrands(query);
             } else if (this.currentSubModule === 'modelos') {
                 this.filterModels('', '');
+            } else if (this.currentSubModule === 'carrocerias') {
+                this.filterCarrocerias(query, '');
             } else {
                 this.filterVehicles(query);
             }
@@ -1328,6 +1656,12 @@ class VictorApp {
         this.filterModels(document.getElementById('modelBrandFilterSelect').value, filter);
     }
     
+    // Manejar filtro de estado en carrocerías
+    handleCarroceriaFilter(e) {
+        const filter = e.target.value;
+        this.filterCarrocerias('', filter);
+    }
+    
     // Filtrar vehículos
     filterVehicles(searchQuery = '', statusFilter = '') {
         let filteredVehicles = [...this.vehicles];
@@ -1336,8 +1670,9 @@ class VictorApp {
         if (searchQuery) {
             filteredVehicles = filteredVehicles.filter(vehicle => 
                 vehicle.placa.toLowerCase().includes(searchQuery) ||
-                vehicle.marca.toLowerCase().includes(searchQuery) ||
-                vehicle.modelo.toLowerCase().includes(searchQuery) ||
+                vehicle.marcas?.nombre?.toLowerCase().includes(searchQuery) ||
+                vehicle.modelos?.nombre?.toLowerCase().includes(searchQuery) ||
+                vehicle.carrocerias?.nombre?.toLowerCase().includes(searchQuery) ||
                 vehicle.color?.toLowerCase().includes(searchQuery) ||
                 vehicle.vin?.toLowerCase().includes(searchQuery)
             );
@@ -1376,6 +1711,7 @@ class VictorApp {
                 <td>${vehicle.marcas?.nombre || '-'}</td>
                 <td>${vehicle.modelos?.nombre || '-'}</td>
                 <td>${vehicle.año}</td>
+                <td>${vehicle.carrocerias?.nombre || '-'}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${vehicle.combustible || '-'}</td>
                 <td>
@@ -1436,6 +1772,28 @@ class VictorApp {
         }
         
         this.renderFilteredModels(filteredModels);
+    }
+    
+    // Filtrar carrocerías
+    filterCarrocerias(searchQuery = '', statusFilter = '') {
+        let filteredCarrocerias = [...this.carrocerias];
+        
+        // Aplicar filtro de búsqueda
+        if (searchQuery) {
+            filteredCarrocerias = filteredCarrocerias.filter(carroceria => 
+                carroceria.nombre.toLowerCase().includes(searchQuery) ||
+                (carroceria.descripcion && carroceria.descripcion.toLowerCase().includes(searchQuery))
+            );
+        }
+        
+        // Aplicar filtro de estado
+        if (statusFilter) {
+            filteredCarrocerias = filteredCarrocerias.filter(carroceria => 
+                carroceria.estado === statusFilter
+            );
+        }
+        
+        this.renderFilteredCarrocerias(filteredCarrocerias);
     }
     
     // Renderizar marcas filtradas
@@ -1509,6 +1867,46 @@ class VictorApp {
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="action-btn delete" onclick="app.deleteModel(${model.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Renderizar carrocerías filtradas
+    renderFilteredCarrocerias(carrocerias) {
+        const tbody = document.getElementById('carroceriasTableBody');
+        const emptyState = document.getElementById('emptyCarroceriasState');
+        const carroceriasTable = document.getElementById('carroceriasTable');
+        
+        if (carrocerias.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.style.display = 'block';
+            carroceriasTable.style.display = 'none';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        carroceriasTable.style.display = 'block';
+        
+        tbody.innerHTML = carrocerias.map(carroceria => `
+            <tr>
+                <td>${carroceria.id}</td>
+                <td><strong>${carroceria.nombre}</strong></td>
+                <td>${carroceria.descripcion || '-'}</td>
+                <td>
+                    <span class="vehicle-status status-${carroceria.estado}">
+                        ${carroceria.estado}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="app.editCarroceria(${carroceria.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteCarroceria(${carroceria.id})" title="Eliminar">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
