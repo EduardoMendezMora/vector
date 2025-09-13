@@ -3,10 +3,10 @@
 
 const SUPABASE_CONFIG = {
     // URL de tu proyecto Supabase
-    url: 'https://tu-proyecto.supabase.co',
+    url: 'https://kltdltqaxhbrxyqvcbxd.supabase.co',
     
     // Clave pública (anon key) de tu proyecto Supabase
-    anonKey: 'tu-clave-publica-aqui'
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdGRsdHFheGhicnh5cXZjYnhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MjE3ODUsImV4cCI6MjA3MzI5Nzc4NX0.CwiAYs1ndwm1D0KkDNGKxUj24_rQ59iMjuWv20jE3Hw'
 };
 
 // Configuración de la aplicación
