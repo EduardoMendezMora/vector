@@ -4,8 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Véctor - Administración de Flotilla</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
@@ -76,37 +81,34 @@
 
             <!-- Content Area -->
             <div class="content-area">
-                <!-- Vehicles Table -->
-                <div class="table-container" id="vehiclesTable">
-                    <div class="table-header">
-                        <h3>Lista de Vehículos</h3>
-                        <div class="table-actions">
-                            <select id="filterSelect" class="filter-select">
+                <!-- Vehicles Cards -->
+                <div class="vehicles-container" id="vehiclesTable">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="section-title mb-0">
+                            <i class="fas fa-car me-2 text-primary"></i>
+                            Mi Flotilla
+                        </h3>
+                        <div class="d-flex gap-3 align-items-center">
+                            <select id="filterSelect" class="form-select form-select-sm" style="width: auto;">
                                 <option value="">Todos los vehículos</option>
                                 <option value="activo">Activos</option>
                                 <option value="inactivo">Inactivos</option>
                             </select>
+                            <button class="btn btn-primary btn-sm" id="addVehicleBtn">
+                                <i class="fas fa-plus me-1"></i>
+                                Agregar Vehículo
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="table-wrapper">
-                        <table class="vehicles-table">
-                            <thead>
-                                <tr>
-                                    <th>Placa</th>
-                                    <th>Marca</th>
-                                    <th>Modelo</th>
-                                    <th>Año</th>
-                                    <th>Color</th>
-                                    <th>Combustible</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="vehiclesTableBody">
-                                <!-- Vehicles will be loaded here -->
-                            </tbody>
-                        </table>
+                    <!-- Cards Grid -->
+                    <div class="row g-4" id="vehiclesGrid">
+                        <!-- Vehicle cards will be loaded here -->
+                    </div>
+                    
+                    <!-- Hidden table for compatibility -->
+                    <div style="display: none;">
+                        <tbody id="vehiclesTableBody"></tbody>
                     </div>
                 </div>
 
@@ -510,6 +512,9 @@
             }
         });
     </script>
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script src="config.js"></script>
     <script src="script.js"></script>
 </body>

@@ -488,48 +488,97 @@ class VictorApp {
         }
     }
     
-    // Renderizar tabla de vehículos
+    // Renderizar tarjetas de vehículos
     renderVehicles() {
-        const tbody = document.getElementById('vehiclesTableBody');
+        const vehiclesGrid = document.getElementById('vehiclesGrid');
         const emptyState = document.getElementById('emptyState');
         const vehiclesTable = document.getElementById('vehiclesTable');
         
         if (this.vehicles.length === 0) {
-            tbody.innerHTML = '';
+            vehiclesGrid.innerHTML = '';
             emptyState.style.display = 'block';
-            vehiclesTable.style.display = 'none';
+            vehiclesTable.querySelector('.vehicles-container').style.display = 'none';
             return;
         }
         
         emptyState.style.display = 'none';
-        vehiclesTable.style.display = 'block';
+        vehiclesTable.querySelector('.vehicles-container').style.display = 'block';
         
-        tbody.innerHTML = this.vehicles.map(vehicle => `
-            <tr>
-                <td><strong>${vehicle.placa}</strong></td>
-                <td>${vehicle.marcas?.nombre || '-'}</td>
-                <td>${vehicle.modelos?.nombre || '-'}</td>
-                <td>${vehicle.año}</td>
-                <td>${vehicle.carrocerias?.nombre || '-'}</td>
-                <td>${vehicle.color || '-'}</td>
-                <td>${vehicle.combustible || '-'}</td>
-                <td>
-                    <span class="vehicle-status status-${vehicle.estado}">
-                        ${vehicle.estado}
-                    </span>
-                </td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="action-btn edit" onclick="app.editVehicle(${vehicle.id})" title="Editar">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-btn delete" onclick="app.deleteVehicle(${vehicle.id})" title="Eliminar">
-                            <i class="fas fa-trash"></i>
-                        </button>
+        vehiclesGrid.innerHTML = this.vehicles.map(vehicle => `
+            <div class="col-lg-4 col-md-6 col-sm-12">
+                <div class="vehicle-card">
+                    <div class="vehicle-card-header">
+                        <div class="vehicle-plate">${vehicle.placa}</div>
+                        <div class="vehicle-brand-model">
+                            ${vehicle.marcas?.nombre || 'Sin marca'} ${vehicle.modelos?.nombre || 'Sin modelo'}
+                        </div>
+                        <div class="vehicle-year">${vehicle.año}</div>
                     </div>
-                </td>
-            </tr>
+                    <div class="vehicle-card-body">
+                        <div class="vehicle-specs">
+                            <div class="spec-item">
+                                <i class="fas fa-car-side"></i>
+                                <span class="spec-value">${vehicle.carrocerias?.nombre || 'Sin carrocería'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-gas-pump"></i>
+                                <span class="spec-value">${vehicle.combustible || 'Sin especificar'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-cogs"></i>
+                                <span class="spec-value">${vehicle.transmision || 'Sin especificar'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-road"></i>
+                                <span class="spec-value">${vehicle.traccion || 'Sin especificar'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-palette"></i>
+                                <span class="spec-value">${vehicle.color || 'Sin color'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span class="spec-value">${vehicle.cilindrada || 0} cc</span>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="vehicle-status status-${vehicle.estado}">
+                                ${vehicle.estado}
+                            </span>
+                        </div>
+                        
+                        <div class="vehicle-actions">
+                            <button class="btn-action btn-edit" onclick="app.editVehicle(${vehicle.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                                Editar
+                            </button>
+                            <button class="btn-action btn-delete" onclick="app.deleteVehicle(${vehicle.id})" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `).join('');
+        
+        // También actualizar el tbody oculto para compatibilidad
+        const tbody = document.getElementById('vehiclesTableBody');
+        if (tbody) {
+            tbody.innerHTML = this.vehicles.map(vehicle => `
+                <tr style="display: none;">
+                    <td>${vehicle.placa}</td>
+                    <td>${vehicle.marcas?.nombre || '-'}</td>
+                    <td>${vehicle.modelos?.nombre || '-'}</td>
+                    <td>${vehicle.año}</td>
+                    <td>${vehicle.carrocerias?.nombre || '-'}</td>
+                    <td>${vehicle.color || '-'}</td>
+                    <td>${vehicle.combustible || '-'}</td>
+                    <td>${vehicle.estado}</td>
+                </tr>
+            `).join('');
+        }
     }
     
     // Renderizar tabla de marcas
@@ -1691,46 +1740,95 @@ class VictorApp {
     
     // Renderizar vehículos filtrados
     renderFilteredVehicles(vehicles) {
-        const tbody = document.getElementById('vehiclesTableBody');
+        const vehiclesGrid = document.getElementById('vehiclesGrid');
         const emptyState = document.getElementById('emptyState');
         const vehiclesTable = document.getElementById('vehiclesTable');
         
         if (vehicles.length === 0) {
-            tbody.innerHTML = '';
+            vehiclesGrid.innerHTML = '';
             emptyState.style.display = 'block';
-            vehiclesTable.style.display = 'none';
+            vehiclesTable.querySelector('.vehicles-container').style.display = 'none';
             return;
         }
         
         emptyState.style.display = 'none';
-        vehiclesTable.style.display = 'block';
+        vehiclesTable.querySelector('.vehicles-container').style.display = 'block';
         
-        tbody.innerHTML = vehicles.map(vehicle => `
-            <tr>
-                <td><strong>${vehicle.placa}</strong></td>
-                <td>${vehicle.marcas?.nombre || '-'}</td>
-                <td>${vehicle.modelos?.nombre || '-'}</td>
-                <td>${vehicle.año}</td>
-                <td>${vehicle.carrocerias?.nombre || '-'}</td>
-                <td>${vehicle.color || '-'}</td>
-                <td>${vehicle.combustible || '-'}</td>
-                <td>
-                    <span class="vehicle-status status-${vehicle.estado}">
-                        ${vehicle.estado}
-                    </span>
-                </td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="action-btn edit" onclick="app.editVehicle(${vehicle.id})" title="Editar">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-btn delete" onclick="app.deleteVehicle(${vehicle.id})" title="Eliminar">
-                            <i class="fas fa-trash"></i>
-                        </button>
+        vehiclesGrid.innerHTML = vehicles.map(vehicle => `
+            <div class="col-lg-4 col-md-6 col-sm-12">
+                <div class="vehicle-card">
+                    <div class="vehicle-card-header">
+                        <div class="vehicle-plate">${vehicle.placa}</div>
+                        <div class="vehicle-brand-model">
+                            ${vehicle.marcas?.nombre || 'Sin marca'} ${vehicle.modelos?.nombre || 'Sin modelo'}
+                        </div>
+                        <div class="vehicle-year">${vehicle.año}</div>
                     </div>
-                </td>
-            </tr>
+                    <div class="vehicle-card-body">
+                        <div class="vehicle-specs">
+                            <div class="spec-item">
+                                <i class="fas fa-car-side"></i>
+                                <span class="spec-value">${vehicle.carrocerias?.nombre || 'Sin carrocería'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-gas-pump"></i>
+                                <span class="spec-value">${vehicle.combustible || 'Sin especificar'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-cogs"></i>
+                                <span class="spec-value">${vehicle.transmision || 'Sin especificar'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-road"></i>
+                                <span class="spec-value">${vehicle.traccion || 'Sin especificar'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-palette"></i>
+                                <span class="spec-value">${vehicle.color || 'Sin color'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span class="spec-value">${vehicle.cilindrada || 0} cc</span>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="vehicle-status status-${vehicle.estado}">
+                                ${vehicle.estado}
+                            </span>
+                        </div>
+                        
+                        <div class="vehicle-actions">
+                            <button class="btn-action btn-edit" onclick="app.editVehicle(${vehicle.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                                Editar
+                            </button>
+                            <button class="btn-action btn-delete" onclick="app.deleteVehicle(${vehicle.id})" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `).join('');
+        
+        // También actualizar el tbody oculto para compatibilidad
+        const tbody = document.getElementById('vehiclesTableBody');
+        if (tbody) {
+            tbody.innerHTML = vehicles.map(vehicle => `
+                <tr style="display: none;">
+                    <td>${vehicle.placa}</td>
+                    <td>${vehicle.marcas?.nombre || '-'}</td>
+                    <td>${vehicle.modelos?.nombre || '-'}</td>
+                    <td>${vehicle.año}</td>
+                    <td>${vehicle.carrocerias?.nombre || '-'}</td>
+                    <td>${vehicle.color || '-'}</td>
+                    <td>${vehicle.combustible || '-'}</td>
+                    <td>${vehicle.estado}</td>
+                </tr>
+            `).join('');
+        }
     }
     
     // Filtrar marcas
