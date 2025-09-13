@@ -501,7 +501,6 @@ class VictorApp {
         
         if (this.isEditing) {
             modalTitle.textContent = 'Editar Vehículo';
-            this.populateForm(vehicle);
         } else {
             modalTitle.textContent = 'Agregar Vehículo';
             form.reset();
@@ -510,13 +509,19 @@ class VictorApp {
         // Llenar selectores
         this.populateBrandsDropdown();
         
-        // Si está editando, cargar modelos de la marca seleccionada
-        if (this.isEditing && vehicle.marca_id) {
-            this.populateModelsDropdown(vehicle.marca_id);
-        }
-        
         modal.classList.add('show');
         modal.style.display = 'flex';
+        
+        // Si está editando, llenar el formulario y cargar modelos DESPUÉS de mostrar el modal
+        if (this.isEditing) {
+            // Usar setTimeout para asegurar que los selectores estén listos
+            setTimeout(() => {
+                this.populateForm(vehicle);
+                if (vehicle.marca_id) {
+                    this.populateModelsDropdown(vehicle.marca_id);
+                }
+            }, 100);
+        }
         
         // Focus en el primer campo
         setTimeout(() => {
@@ -664,6 +669,8 @@ class VictorApp {
     
     // Llenar formulario con datos del vehículo
     populateForm(vehicle) {
+        console.log('Llenando formulario con vehículo:', vehicle);
+        
         const fields = [
             'placa', 'año', 'carroceria', 
             'cilindrada', 'cilindros', 'combustible', 'transmision', 
@@ -680,11 +687,21 @@ class VictorApp {
         
         // Llenar selectores de marca y modelo con los IDs
         if (vehicle.marca_id) {
-            document.getElementById('marca').value = vehicle.marca_id;
+            console.log('Estableciendo marca_id:', vehicle.marca_id);
+            const marcaSelect = document.getElementById('marca');
+            if (marcaSelect) {
+                marcaSelect.value = vehicle.marca_id;
+                console.log('Marca establecida:', marcaSelect.value);
+            }
         }
         
         if (vehicle.modelo_id) {
-            document.getElementById('modelo').value = vehicle.modelo_id;
+            console.log('Estableciendo modelo_id:', vehicle.modelo_id);
+            const modeloSelect = document.getElementById('modelo');
+            if (modeloSelect) {
+                modeloSelect.value = vehicle.modelo_id;
+                console.log('Modelo establecido:', modeloSelect.value);
+            }
         }
     }
     
