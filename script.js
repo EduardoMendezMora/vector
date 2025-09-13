@@ -5,10 +5,13 @@ class VictorApp {
     constructor() {
         this.currentVehicle = null;
         this.currentBrand = null;
+        this.currentModel = null;
         this.vehicles = [];
         this.brands = [];
+        this.models = [];
         this.isEditing = false;
         this.isEditingBrand = false;
+        this.isEditingModel = false;
         this.currentModule = 'vehiculos';
         this.currentSubModule = null;
         this.searchTimeout = null;
@@ -41,6 +44,7 @@ class VictorApp {
         document.getElementById('addBtn').addEventListener('click', () => this.showAddModal());
         document.getElementById('addFirstBtn').addEventListener('click', () => this.showAddModal());
         document.getElementById('addFirstBrandBtn').addEventListener('click', () => this.showBrandModal());
+        document.getElementById('addFirstModelBtn').addEventListener('click', () => this.showModelModal());
         
         // Modal events
         document.getElementById('modalClose').addEventListener('click', () => this.hideVehicleModal());
@@ -52,6 +56,11 @@ class VictorApp {
         document.getElementById('cancelBrandBtn').addEventListener('click', () => this.hideBrandModal());
         document.getElementById('brandForm').addEventListener('submit', (e) => this.handleBrandSubmit(e));
         
+        // Model modal events
+        document.getElementById('modelModalClose').addEventListener('click', () => this.hideModelModal());
+        document.getElementById('cancelModelBtn').addEventListener('click', () => this.hideModelModal());
+        document.getElementById('modelForm').addEventListener('submit', (e) => this.handleModelSubmit(e));
+        
         // Delete modal events
         document.getElementById('deleteModalClose').addEventListener('click', () => this.hideDeleteModal());
         document.getElementById('cancelDeleteBtn').addEventListener('click', () => this.hideDeleteModal());
@@ -61,6 +70,11 @@ class VictorApp {
         document.getElementById('searchInput').addEventListener('input', (e) => this.handleSearch(e));
         document.getElementById('filterSelect').addEventListener('change', (e) => this.handleFilter(e));
         document.getElementById('brandFilterSelect').addEventListener('change', (e) => this.handleBrandFilter(e));
+        document.getElementById('modelBrandFilterSelect').addEventListener('change', (e) => this.handleModelBrandFilter(e));
+        document.getElementById('modelFilterSelect').addEventListener('change', (e) => this.handleModelFilter(e));
+        
+        // Vehicle form events
+        document.getElementById('marca').addEventListener('change', (e) => this.handleMarcaChange(e));
         
         // Close modals on outside click
         document.getElementById('vehicleModal').addEventListener('click', (e) => {
@@ -69,6 +83,10 @@ class VictorApp {
         
         document.getElementById('brandModal').addEventListener('click', (e) => {
             if (e.target.id === 'brandModal') this.hideBrandModal();
+        });
+        
+        document.getElementById('modelModal').addEventListener('click', (e) => {
+            if (e.target.id === 'modelModal') this.hideModelModal();
         });
         
         document.getElementById('deleteModal').addEventListener('click', (e) => {
@@ -168,15 +186,21 @@ class VictorApp {
                 pageTitle.textContent = 'Marcas de Vehículos';
                 this.showBrandsModule();
                 break;
+            case 'modelos':
+                pageTitle.textContent = 'Modelos de Vehículos';
+                this.showModelsModule();
+                break;
         }
     }
     
     // Mostrar módulo de vehículos
     showVehiclesModule() {
-        // Ocultar tabla de marcas y mostrar tabla de vehículos
+        // Ocultar otras tablas y mostrar tabla de vehículos
         document.getElementById('brandsTable').style.display = 'none';
+        document.getElementById('modelsTable').style.display = 'none';
         document.getElementById('vehiclesTable').style.display = 'block';
         document.getElementById('emptyBrandsState').style.display = 'none';
+        document.getElementById('emptyModelsState').style.display = 'none';
         
         // Actualizar botones
         document.getElementById('addBtnText').textContent = 'Agregar Vehículo';
@@ -188,10 +212,12 @@ class VictorApp {
     
     // Mostrar módulo de marcas
     showBrandsModule() {
-        // Ocultar tabla de vehículos y mostrar tabla de marcas
+        // Ocultar otras tablas y mostrar tabla de marcas
         document.getElementById('vehiclesTable').style.display = 'none';
+        document.getElementById('modelsTable').style.display = 'none';
         document.getElementById('brandsTable').style.display = 'block';
         document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('emptyModelsState').style.display = 'none';
         
         // Actualizar botones
         document.getElementById('addBtnText').textContent = 'Agregar Marca';
@@ -199,6 +225,23 @@ class VictorApp {
         
         // Cargar marcas
         this.loadBrands();
+    }
+    
+    // Mostrar módulo de modelos
+    showModelsModule() {
+        // Ocultar otras tablas y mostrar tabla de modelos
+        document.getElementById('vehiclesTable').style.display = 'none';
+        document.getElementById('brandsTable').style.display = 'none';
+        document.getElementById('modelsTable').style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('emptyBrandsState').style.display = 'none';
+        
+        // Actualizar botones
+        document.getElementById('addBtnText').textContent = 'Agregar Modelo';
+        document.getElementById('addFirstBtnText').textContent = 'Agregar Primer Modelo';
+        
+        // Cargar modelos
+        this.loadModels();
     }
     
     
@@ -259,6 +302,44 @@ class VictorApp {
             this.showToast('Error al cargar marcas: ' + error.message, 'error');
             this.brands = [];
             this.renderBrands();
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
+    // Cargar modelos desde Supabase
+    async loadModels() {
+        try {
+            this.showLoading(true);
+            
+            if (!supabase) {
+                throw new Error('Supabase no está inicializado');
+            }
+            
+            const { data, error } = await supabase
+                .from('modelos')
+                .select(`
+                    *,
+                    marcas (
+                        id,
+                        nombre
+                    )
+                `)
+                .order('nombre', { ascending: true });
+            
+            if (error) {
+                throw error;
+            }
+            
+            this.models = data || [];
+            this.renderModels();
+            this.populateModelBrandFilter();
+            
+        } catch (error) {
+            console.error('Error al cargar modelos:', error);
+            this.showToast('Error al cargar modelos: ' + error.message, 'error');
+            this.models = [];
+            this.renderModels();
         } finally {
             this.showLoading(false);
         }
@@ -346,10 +427,52 @@ class VictorApp {
         `).join('');
     }
     
-    // Mostrar modal de agregar (vehículo o marca)
+    // Renderizar tabla de modelos
+    renderModels() {
+        const tbody = document.getElementById('modelsTableBody');
+        const emptyState = document.getElementById('emptyModelsState');
+        const modelsTable = document.getElementById('modelsTable');
+        
+        if (this.models.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.style.display = 'block';
+            modelsTable.style.display = 'none';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        modelsTable.style.display = 'block';
+        
+        tbody.innerHTML = this.models.map(model => `
+            <tr>
+                <td>${model.id}</td>
+                <td><strong>${model.nombre}</strong></td>
+                <td>${model.marcas?.nombre || '-'}</td>
+                <td>
+                    <span class="vehicle-status status-${model.estado}">
+                        ${model.estado}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="app.editModel(${model.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteModel(${model.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Mostrar modal de agregar (vehículo, marca o modelo)
     showAddModal() {
         if (this.currentSubModule === 'marcas') {
             this.showBrandModal();
+        } else if (this.currentSubModule === 'modelos') {
+            this.showModelModal();
         } else {
             this.showVehicleModal();
         }
@@ -430,6 +553,72 @@ class VictorApp {
     // Llenar formulario de marca con datos
     populateBrandForm(brand) {
         document.getElementById('brandName').value = brand.nombre || '';
+    }
+    
+    // Mostrar modal de modelo
+    showModelModal(model = null) {
+        const modal = document.getElementById('modelModal');
+        const modalTitle = document.getElementById('modelModalTitle');
+        const form = document.getElementById('modelForm');
+        
+        this.currentModel = model;
+        this.isEditingModel = !!model;
+        
+        if (this.isEditingModel) {
+            modalTitle.textContent = 'Editar Modelo';
+            this.populateModelForm(model);
+        } else {
+            modalTitle.textContent = 'Agregar Modelo';
+            form.reset();
+        }
+        
+        // Llenar selector de marcas
+        this.populateModelBrandSelector();
+        
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        
+        // Focus en el primer campo
+        setTimeout(() => {
+            document.getElementById('modelBrand').focus();
+        }, 100);
+    }
+    
+    // Ocultar modal de modelo
+    hideModelModal() {
+        const modal = document.getElementById('modelModal');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        
+        this.currentModel = null;
+        this.isEditingModel = false;
+    }
+    
+    // Llenar formulario de modelo con datos
+    populateModelForm(model) {
+        document.getElementById('modelBrand').value = model.marca_id || '';
+        document.getElementById('modelName').value = model.nombre || '';
+    }
+    
+    // Llenar selector de marcas en el modal de modelo
+    populateModelBrandSelector() {
+        const selector = document.getElementById('modelBrand');
+        const currentValue = selector.value;
+        
+        selector.innerHTML = '<option value="">Seleccionar marca...</option>';
+        
+        this.brands.forEach(brand => {
+            if (brand.estado === 'activo') {
+                const option = document.createElement('option');
+                option.value = brand.id;
+                option.textContent = brand.nombre;
+                selector.appendChild(option);
+            }
+        });
+        
+        if (currentValue) {
+            selector.value = currentValue;
+        }
     }
     
     // Llenar formulario con datos del vehículo

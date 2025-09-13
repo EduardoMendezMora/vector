@@ -35,6 +35,12 @@
                                     <span class="nav-text">Marcas</span>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" data-submodule="modelos">
+                                    <i class="fas fa-car-side"></i>
+                                    <span class="nav-text">Modelos</span>
+                                </a>
+                            </li>
                         </ul>
                     </li>
                 </ul>
@@ -128,6 +134,40 @@
                     </div>
                 </div>
 
+                <!-- Models Table -->
+                <div class="table-container" id="modelsTable" style="display: none;">
+                    <div class="table-header">
+                        <h3>Lista de Modelos</h3>
+                        <div class="table-actions">
+                            <select id="modelBrandFilterSelect" class="filter-select">
+                                <option value="">Todas las marcas</option>
+                            </select>
+                            <select id="modelFilterSelect" class="filter-select">
+                                <option value="">Todos los modelos</option>
+                                <option value="activo">Activos</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="table-wrapper">
+                        <table class="models-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Marca</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modelsTableBody">
+                                <!-- Models will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Loading State -->
                 <div class="loading" id="loadingState" style="display: none;">
                     <i class="fas fa-spinner fa-spin"></i>
@@ -153,6 +193,17 @@
                     <button class="btn btn-primary" id="addFirstBrandBtn">
                         <i class="fas fa-plus"></i>
                         Agregar Primera Marca
+                    </button>
+                </div>
+
+                <!-- Empty State for Models -->
+                <div class="empty-state" id="emptyModelsState" style="display: none;">
+                    <i class="fas fa-car-side"></i>
+                    <h3>No hay modelos registrados</h3>
+                    <p>Comienza agregando tu primer modelo de vehículo</p>
+                    <button class="btn btn-primary" id="addFirstModelBtn">
+                        <i class="fas fa-plus"></i>
+                        Agregar Primer Modelo
                     </button>
                 </div>
             </div>
@@ -185,7 +236,9 @@
                     
                     <div class="form-group">
                         <label for="modelo">Modelo *</label>
-                        <input type="text" id="modelo" name="modelo" required>
+                        <select id="modelo" name="modelo" required>
+                            <option value="">Seleccionar modelo...</option>
+                        </select>
                     </div>
                     
                     <div class="form-group">
@@ -302,6 +355,42 @@
                     <button type="submit" class="btn btn-primary" id="saveBrandBtn">
                         <i class="fas fa-save"></i>
                         Guardar Marca
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Model Modal -->
+    <div class="modal" id="modelModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modelModalTitle">Agregar Modelo</h3>
+                <button class="modal-close" id="modelModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form class="model-form" id="modelForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="modelBrand">Marca *</label>
+                        <select id="modelBrand" name="modelBrand" required>
+                            <option value="">Seleccionar marca...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modelName">Nombre del Modelo *</label>
+                        <input type="text" id="modelName" name="modelName" required maxlength="50">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelModelBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="saveModelBtn">
+                        <i class="fas fa-save"></i>
+                        Guardar Modelo
                     </button>
                 </div>
             </form>
