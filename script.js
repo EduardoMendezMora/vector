@@ -248,6 +248,15 @@ class VictorApp {
     async loadInitialData() {
         try {
             console.log('Iniciando carga de datos...');
+            console.log('Supabase disponible:', !!supabase);
+            
+            // Verificar conexión con una consulta simple
+            const { data: testData, error: testError } = await supabase
+                .from('marcas')
+                .select('count')
+                .limit(1);
+            
+            console.log('Test de conexión a marcas:', { testData, testError });
             
             // Primero cargar marcas
             await this.loadBrands();
