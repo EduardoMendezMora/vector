@@ -130,18 +130,6 @@ class VictorApp {
                 pageTitle.textContent = 'Vehículos';
                 this.showVehiclesModule();
                 break;
-            case 'mantenimiento':
-                pageTitle.textContent = 'Mantenimiento';
-                this.showMaintenanceModule();
-                break;
-            case 'conductores':
-                pageTitle.textContent = 'Conductores';
-                this.showDriversModule();
-                break;
-            case 'reportes':
-                pageTitle.textContent = 'Reportes';
-                this.showReportsModule();
-                break;
         }
     }
     
@@ -151,18 +139,6 @@ class VictorApp {
         this.loadVehicles();
     }
     
-    // Mostrar otros módulos (placeholder)
-    showMaintenanceModule() {
-        this.showToast('Módulo de Mantenimiento - Próximamente', 'info');
-    }
-    
-    showDriversModule() {
-        this.showToast('Módulo de Conductores - Próximamente', 'info');
-    }
-    
-    showReportsModule() {
-        this.showToast('Módulo de Reportes - Próximamente', 'info');
-    }
     
     // Cargar vehículos desde Supabase
     async loadVehicles() {
