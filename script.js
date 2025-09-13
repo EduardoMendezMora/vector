@@ -194,7 +194,7 @@ class VictorApp {
     }
     
     // Mostrar módulo de vehículos
-    showVehiclesModule() {
+    async showVehiclesModule() {
         // Ocultar otras tablas y mostrar tabla de vehículos
         document.getElementById('brandsTable').style.display = 'none';
         document.getElementById('modelsTable').style.display = 'none';
@@ -207,7 +207,7 @@ class VictorApp {
         document.getElementById('addFirstBtnText').textContent = 'Agregar Primer Vehículo';
         
         // Cargar datos en orden correcto
-        this.loadInitialData();
+        await this.loadInitialData();
     }
     
     // Mostrar módulo de marcas
