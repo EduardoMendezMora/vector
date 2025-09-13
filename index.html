@@ -276,6 +276,17 @@
 
     <!-- Supabase Script -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Verificar que Supabase se cargó correctamente
+        window.addEventListener('load', function() {
+            if (typeof window.supabase === 'undefined') {
+                console.error('❌ Error: Script de Supabase no se cargó correctamente');
+                document.body.innerHTML = '<div style="padding: 20px; text-align: center; color: red;"><h1>Error de Carga</h1><p>No se pudo cargar Supabase. Verifica tu conexión a internet.</p></div>';
+            } else {
+                console.log('✅ Script de Supabase cargado correctamente');
+            }
+        });
+    </script>
     <script src="config.js"></script>
     <script src="script.js"></script>
 </body>

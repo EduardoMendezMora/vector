@@ -60,6 +60,16 @@ class VictorApp {
     // Inicializar Supabase
     async initializeSupabase() {
         try {
+            // Esperar a que el DOM esté completamente cargado
+            if (document.readyState === 'loading') {
+                await new Promise(resolve => {
+                    document.addEventListener('DOMContentLoaded', resolve);
+                });
+            }
+            
+            // Esperar un poco más para asegurar que los scripts se carguen
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
             const isInitialized = window.SupabaseConfig.initialize();
             if (isInitialized) {
                 const isConnected = await window.SupabaseConfig.testConnection();

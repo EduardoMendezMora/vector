@@ -43,15 +43,17 @@ function initializeSupabase() {
             return false;
         }
         
-        // Inicializar Supabase (esto requiere que hayas incluido el script de Supabase en tu HTML)
-        if (typeof supabase !== 'undefined') {
-            supabase = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-            console.log('✅ Supabase inicializado correctamente');
-            return true;
-        } else {
+        // Verificar que el script de Supabase se cargó
+        if (typeof window.supabase === 'undefined') {
             console.error('❌ Supabase no está disponible. Asegúrate de incluir el script de Supabase en tu HTML.');
             return false;
         }
+        
+        // Inicializar Supabase
+        supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+        console.log('✅ Supabase inicializado correctamente');
+        return true;
+        
     } catch (error) {
         console.error('❌ Error al inicializar Supabase:', error);
         return false;
