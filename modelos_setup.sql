@@ -22,6 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_modelos_estado ON modelos(estado);
 CREATE INDEX IF NOT EXISTS idx_modelos_created_at ON modelos(created_at);
 
 -- 3. CREAR TRIGGER PARA ACTUALIZAR updated_at EN MODELOS
+DROP TRIGGER IF EXISTS update_modelos_updated_at ON modelos;
 CREATE TRIGGER update_modelos_updated_at 
     BEFORE UPDATE ON modelos 
     FOR EACH ROW 
@@ -30,6 +31,7 @@ CREATE TRIGGER update_modelos_updated_at
 -- 4. CONFIGURAR POLÍTICAS DE SEGURIDAD PARA MODELOS
 ALTER TABLE modelos ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Permitir todas las operaciones en modelos" ON modelos;
 CREATE POLICY "Permitir todas las operaciones en modelos" ON modelos
     FOR ALL USING (true) WITH CHECK (true);
 
@@ -38,7 +40,8 @@ INSERT INTO modelos (nombre, marca_id, estado) VALUES
 -- Hyundai (ID 10 según marcas_setup.sql)
 ('Santa Fe', 10, 'activo'),
 ('Tucson', 10, 'activo'),
-('Avante', 10, 'activo');
+('Avante', 10, 'activo')
+ON CONFLICT (nombre, marca_id) DO NOTHING;
 
 -- 6. VERIFICACIÓN FINAL
 SELECT 

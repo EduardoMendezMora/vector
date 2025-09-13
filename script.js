@@ -206,8 +206,10 @@ class VictorApp {
         document.getElementById('addBtnText').textContent = 'Agregar Vehículo';
         document.getElementById('addFirstBtnText').textContent = 'Agregar Primer Vehículo';
         
-        // Cargar vehículos
+        // Cargar vehículos, marcas y modelos
         this.loadVehicles();
+        this.loadBrands();
+        this.loadModels();
     }
     
     // Mostrar módulo de marcas
@@ -495,6 +497,9 @@ class VictorApp {
             form.reset();
         }
         
+        // Llenar selectores
+        this.populateBrandsDropdown();
+        
         modal.classList.add('show');
         modal.style.display = 'flex';
         
@@ -606,6 +611,27 @@ class VictorApp {
         const currentValue = selector.value;
         
         selector.innerHTML = '<option value="">Seleccionar marca...</option>';
+        
+        this.brands.forEach(brand => {
+            if (brand.estado === 'activo') {
+                const option = document.createElement('option');
+                option.value = brand.id;
+                option.textContent = brand.nombre;
+                selector.appendChild(option);
+            }
+        });
+        
+        if (currentValue) {
+            selector.value = currentValue;
+        }
+    }
+    
+    // Llenar filtro de marcas en la tabla de modelos
+    populateModelBrandFilter() {
+        const selector = document.getElementById('modelBrandFilterSelect');
+        const currentValue = selector.value;
+        
+        selector.innerHTML = '<option value="">Todas las marcas</option>';
         
         this.brands.forEach(brand => {
             if (brand.estado === 'activo') {
@@ -845,6 +871,160 @@ class VictorApp {
         }
     }
     
+    // Manejar envío del formulario de modelo
+    async handleModelSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const modelData = Object.fromEntries(formData.entries());
+        
+        // Validar campos requeridos
+        if (!modelData.modelBrand) {
+            this.showToast('Por favor, selecciona una marca', 'error');
+            return;
+        }
+        
+        if (!modelData.modelName) {
+            this.showToast('Por favor, ingresa el nombre del modelo', 'error');
+            return;
+        }
+        
+        try {
+            this.showLoading(true);
+            
+            if (this.isEditingModel) {
+                await this.updateModel(modelData);
+            } else {
+                await this.createModel(modelData);
+            }
+            
+            this.hideModelModal();
+            this.loadModels();
+            
+        } catch (error) {
+            console.error('Error al guardar modelo:', error);
+            this.showToast('Error al guardar modelo: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
+    // Crear nuevo modelo
+    async createModel(modelData) {
+        if (!supabase) {
+            throw new Error('Supabase no está inicializado');
+        }
+        
+        const { data, error } = await supabase
+            .from('modelos')
+            .insert([{
+                nombre: modelData.modelName,
+                marca_id: parseInt(modelData.modelBrand),
+                estado: 'activo'
+            }])
+            .select();
+        
+        if (error) {
+            throw error;
+        }
+        
+        this.showToast('Modelo creado exitosamente', 'success');
+        return data[0];
+    }
+    
+    // Actualizar modelo existente
+    async updateModel(modelData) {
+        if (!supabase) {
+            throw new Error('Supabase no está inicializado');
+        }
+        
+        const { data, error } = await supabase
+            .from('modelos')
+            .update({
+                nombre: modelData.modelName,
+                marca_id: parseInt(modelData.modelBrand),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', this.currentModel.id)
+            .select();
+        
+        if (error) {
+            throw error;
+        }
+        
+        this.showToast('Modelo actualizado exitosamente', 'success');
+        return data[0];
+    }
+    
+    // Editar modelo
+    editModel(id) {
+        const model = this.models.find(m => m.id === id);
+        if (model) {
+            this.showModelModal(model);
+        }
+    }
+    
+    // Eliminar modelo
+    deleteModel(id) {
+        const model = this.models.find(m => m.id === id);
+        if (model) {
+            this.currentModel = model;
+            this.showDeleteModal();
+        }
+    }
+    
+    // Manejar cambio de marca en vehículo
+    handleMarcaChange(e) {
+        const marcaId = e.target.value;
+        this.populateModelsDropdown(marcaId);
+    }
+    
+    // Llenar selector de modelos según la marca seleccionada
+    populateModelsDropdown(marcaId) {
+        const selector = document.getElementById('modelo');
+        const currentValue = selector.value;
+        
+        selector.innerHTML = '<option value="">Seleccionar modelo...</option>';
+        
+        if (marcaId) {
+            const modelsForBrand = this.models.filter(model => 
+                model.marca_id == marcaId && model.estado === 'activo'
+            );
+            
+            modelsForBrand.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.nombre;
+                selector.appendChild(option);
+            });
+        }
+        
+        if (currentValue) {
+            selector.value = currentValue;
+        }
+    }
+    
+    // Llenar selector de marcas en el modal de vehículo
+    populateBrandsDropdown() {
+        const selector = document.getElementById('marca');
+        const currentValue = selector.value;
+        
+        selector.innerHTML = '<option value="">Seleccionar marca...</option>';
+        
+        this.brands.forEach(brand => {
+            if (brand.estado === 'activo') {
+                const option = document.createElement('option');
+                option.value = brand.id;
+                option.textContent = brand.nombre;
+                selector.appendChild(option);
+            }
+        });
+        
+        if (currentValue) {
+            selector.value = currentValue;
+        }
+    }
+    
     // Mostrar modal de confirmación de eliminación
     showDeleteModal() {
         const modal = document.getElementById('deleteModal');
@@ -857,6 +1037,9 @@ class VictorApp {
         } else if (this.currentBrand) {
             title.textContent = 'Confirmar Eliminación de Marca';
             message.textContent = `¿Estás seguro de que deseas eliminar la marca ${this.currentBrand.nombre}?`;
+        } else if (this.currentModel) {
+            title.textContent = 'Confirmar Eliminación de Modelo';
+            message.textContent = `¿Estás seguro de que deseas eliminar el modelo ${this.currentModel.nombre}?`;
         }
         
         modal.classList.add('show');
@@ -871,11 +1054,12 @@ class VictorApp {
         
         this.currentVehicle = null;
         this.currentBrand = null;
+        this.currentModel = null;
     }
     
     // Confirmar eliminación
     async confirmDelete() {
-        if (!this.currentVehicle && !this.currentBrand) return;
+        if (!this.currentVehicle && !this.currentBrand && !this.currentModel) return;
         
         try {
             this.showLoading(true);
@@ -911,11 +1095,25 @@ class VictorApp {
                 this.hideDeleteModal();
                 this.loadBrands();
                 this.showToast('Marca eliminada exitosamente', 'success');
+                
+            } else if (this.currentModel) {
+                const { error } = await supabase
+                    .from('modelos')
+                    .delete()
+                    .eq('id', this.currentModel.id);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                this.hideDeleteModal();
+                this.loadModels();
+                this.showToast('Modelo eliminado exitosamente', 'success');
             }
             
         } catch (error) {
             console.error('Error al eliminar:', error);
-            const itemType = this.currentVehicle ? 'vehículo' : 'marca';
+            const itemType = this.currentVehicle ? 'vehículo' : (this.currentBrand ? 'marca' : 'modelo');
             this.showToast(`Error al eliminar ${itemType}: ` + error.message, 'error');
         } finally {
             this.showLoading(false);
@@ -931,6 +1129,8 @@ class VictorApp {
         this.searchTimeout = setTimeout(() => {
             if (this.currentSubModule === 'marcas') {
                 this.filterBrands(query);
+            } else if (this.currentSubModule === 'modelos') {
+                this.filterModels('', '');
             } else {
                 this.filterVehicles(query);
             }
@@ -947,6 +1147,18 @@ class VictorApp {
     handleBrandFilter(e) {
         const filter = e.target.value;
         this.filterBrands('', filter);
+    }
+    
+    // Manejar filtro de marca en modelos
+    handleModelBrandFilter(e) {
+        const filter = e.target.value;
+        this.filterModels(filter, document.getElementById('modelFilterSelect').value);
+    }
+    
+    // Manejar filtro de estado en modelos
+    handleModelFilter(e) {
+        const filter = e.target.value;
+        this.filterModels(document.getElementById('modelBrandFilterSelect').value, filter);
     }
     
     // Filtrar vehículos
@@ -1040,6 +1252,25 @@ class VictorApp {
         this.renderFilteredBrands(filteredBrands);
     }
     
+    // Filtrar modelos
+    filterModels(brandFilter = '', statusFilter = '') {
+        let filteredModels = [...this.models];
+        
+        // Aplicar filtro de marca
+        if (brandFilter) {
+            filteredModels = filteredModels.filter(model => 
+                model.marca_id == brandFilter
+            );
+        }
+        
+        // Aplicar filtro de estado
+        if (statusFilter) {
+            filteredModels = filteredModels.filter(model => model.estado === statusFilter);
+        }
+        
+        this.renderFilteredModels(filteredModels);
+    }
+    
     // Renderizar marcas filtradas
     renderFilteredBrands(brands) {
         const tbody = document.getElementById('brandsTableBody');
@@ -1071,6 +1302,46 @@ class VictorApp {
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="action-btn delete" onclick="app.deleteBrand(${brand.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Renderizar modelos filtrados
+    renderFilteredModels(models) {
+        const tbody = document.getElementById('modelsTableBody');
+        const emptyState = document.getElementById('emptyModelsState');
+        const modelsTable = document.getElementById('modelsTable');
+        
+        if (models.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.style.display = 'block';
+            modelsTable.style.display = 'none';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        modelsTable.style.display = 'block';
+        
+        tbody.innerHTML = models.map(model => `
+            <tr>
+                <td>${model.id}</td>
+                <td><strong>${model.nombre}</strong></td>
+                <td>${model.marcas?.nombre || '-'}</td>
+                <td>
+                    <span class="vehicle-status status-${model.estado}">
+                        ${model.estado}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="app.editModel(${model.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteModel(${model.id})" title="Eliminar">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
