@@ -117,6 +117,17 @@ body {
   box-shadow: var(--vector-shadow);
 }
 
+.logo-image {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 12px;
+  margin-right: 0.75rem;
+  box-shadow: var(--vector-shadow);
+  background: white;
+  padding: 2px;
+}
+
 .logo-text {
   transition: opacity 0.3s ease, width 0.3s ease;
 }
