@@ -722,3 +722,21 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--vector-gray-400);
 }
+
+/* ===== MONETARY VALUES ===== */
+.monetary-value {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: var(--vector-green);
+}
+
+.input-group-text {
+  background: var(--vector-light-gray);
+  border-color: var(--vector-border);
+  color: var(--vector-green);
+  font-weight: 600;
+}
+
+.text-end {
+  text-align: right !important;
+}

@@ -130,6 +130,7 @@
                                         <th class="fw-semibold">Carrocería</th>
                                         <th class="fw-semibold">Color</th>
                                         <th class="fw-semibold">Combustible</th>
+                                        <th class="fw-semibold text-end">Leasing Semanal</th>
                                         <th class="fw-semibold">Estado</th>
                                         <th class="fw-semibold text-center">Acciones</th>
                                     </tr>
@@ -447,6 +448,15 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Color</label>
                                 <input type="text" class="form-control" id="color" name="color">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Leasing Semanal</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₡</span>
+                                    <input type="number" class="form-control" id="leasing_semanal" name="leasing_semanal" 
+                                           step="0.01" min="0" placeholder="125000.50">
+                                </div>
+                                <div class="form-text">Valor semanal del leasing en colones</div>
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-semibold">VIN (Número de Identificación del Vehículo)</label>

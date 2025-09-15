@@ -59,6 +59,22 @@ class VictorApp {
         };
         return formatMap[traccion.toLowerCase()] || traccion;
     }
+
+    // Función para formatear valores en colones costarricenses
+    formatColones(valor) {
+        if (!valor || valor === 0) return '-';
+        
+        // Convertir a número si es string
+        const numero = typeof valor === 'string' ? parseFloat(valor) : valor;
+        
+        if (isNaN(numero)) return '-';
+        
+        // Formatear con separadores de miles y 2 decimales
+        return '₡' + numero.toLocaleString('es-CR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
     
     // Inicialización de la aplicación
     async init() {
@@ -535,6 +551,7 @@ class VictorApp {
                 <td>${vehicle.carrocerias?.nombre || '-'}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${this.formatCombustible(vehicle.combustible)}</td>
+                <td class="text-end fw-semibold text-success">${this.formatColones(vehicle.leasing_semanal)}</td>
                 <td>
                     <span class="vehicle-status status-${vehicle.estado}">
                         ${vehicle.estado}
@@ -976,7 +993,7 @@ class VictorApp {
         const fields = [
             'placa', 'año', 
             'cilindrada', 'cilindros', 'combustible', 'transmision', 
-            'traccion', 'color', 'vin'
+            'traccion', 'color', 'vin', 'leasing_semanal'
         ];
         
         // Llenar campos normales
@@ -1179,6 +1196,15 @@ class VictorApp {
             return;
         }
         
+        // Validar leasing semanal si se proporciona
+        if (vehicleData.leasing_semanal) {
+            const leasing = parseFloat(vehicleData.leasing_semanal);
+            if (isNaN(leasing) || leasing < 0) {
+                this.showToast('El valor del leasing debe ser un número positivo', 'error');
+                return;
+            }
+        }
+        
         try {
             this.showLoading(true);
             
@@ -1325,6 +1351,7 @@ class VictorApp {
                 traccion: vehicleData.traccion,
                 color: vehicleData.color,
                 vin: vehicleData.vin,
+                leasing_semanal: vehicleData.leasing_semanal ? parseFloat(vehicleData.leasing_semanal) : null,
                 estado: 'activo'
             }])
             .select();
@@ -1358,6 +1385,7 @@ class VictorApp {
                 traccion: vehicleData.traccion,
                 color: vehicleData.color,
                 vin: vehicleData.vin,
+                leasing_semanal: vehicleData.leasing_semanal ? parseFloat(vehicleData.leasing_semanal) : null,
                 updated_at: new Date().toISOString()
             })
             .eq('id', this.currentVehicle.id)
@@ -1718,7 +1746,8 @@ class VictorApp {
                 vehicle.carrocerias?.nombre?.toLowerCase().includes(searchQuery) ||
                 vehicle.color?.toLowerCase().includes(searchQuery) ||
                 vehicle.vin?.toLowerCase().includes(searchQuery) ||
-                this.formatCombustible(vehicle.combustible).toLowerCase().includes(searchQuery)
+                this.formatCombustible(vehicle.combustible).toLowerCase().includes(searchQuery) ||
+                this.formatColones(vehicle.leasing_semanal).toLowerCase().includes(searchQuery)
             );
         }
         
@@ -1758,6 +1787,7 @@ class VictorApp {
                 <td>${vehicle.carrocerias?.nombre || '-'}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${this.formatCombustible(vehicle.combustible)}</td>
+                <td class="text-end fw-semibold text-success">${this.formatColones(vehicle.leasing_semanal)}</td>
                 <td>
                     <span class="vehicle-status status-${vehicle.estado}">
                         ${vehicle.estado}
