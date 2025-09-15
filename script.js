@@ -22,6 +22,43 @@ class VictorApp {
         
         this.init();
     }
+
+    // Función para formatear valores de combustible
+    formatCombustible(combustible) {
+        if (!combustible) return '-';
+        const formatMap = {
+            'diesel': 'Diésel',
+            'gasolina': 'Gasolina',
+            'gas': 'Gas',
+            'electrico': 'Eléctrico',
+            'hibrido': 'Híbrido'
+        };
+        return formatMap[combustible.toLowerCase()] || combustible;
+    }
+
+    // Función para formatear valores de transmisión
+    formatTransmision(transmision) {
+        if (!transmision) return '-';
+        const formatMap = {
+            'manual': 'Manual',
+            'automatica': 'Automática',
+            'cvt': 'CVT'
+        };
+        return formatMap[transmision.toLowerCase()] || transmision;
+    }
+
+    // Función para formatear valores de tracción
+    formatTraccion(traccion) {
+        if (!traccion) return '-';
+        const formatMap = {
+            'delantera': 'Delantera',
+            'trasera': 'Trasera',
+            '4x4': '4X4',
+            '4x2': '4X2',
+            'awd': 'AWD'
+        };
+        return formatMap[traccion.toLowerCase()] || traccion;
+    }
     
     // Inicialización de la aplicación
     async init() {
@@ -497,7 +534,7 @@ class VictorApp {
                 <td>${vehicle.año}</td>
                 <td>${vehicle.carrocerias?.nombre || '-'}</td>
                 <td>${vehicle.color || '-'}</td>
-                <td>${vehicle.combustible || '-'}</td>
+                <td>${this.formatCombustible(vehicle.combustible)}</td>
                 <td>
                     <span class="vehicle-status status-${vehicle.estado}">
                         ${vehicle.estado}
@@ -1680,7 +1717,8 @@ class VictorApp {
                 vehicle.modelos?.nombre?.toLowerCase().includes(searchQuery) ||
                 vehicle.carrocerias?.nombre?.toLowerCase().includes(searchQuery) ||
                 vehicle.color?.toLowerCase().includes(searchQuery) ||
-                vehicle.vin?.toLowerCase().includes(searchQuery)
+                vehicle.vin?.toLowerCase().includes(searchQuery) ||
+                this.formatCombustible(vehicle.combustible).toLowerCase().includes(searchQuery)
             );
         }
         
@@ -1719,7 +1757,7 @@ class VictorApp {
                 <td>${vehicle.año}</td>
                 <td>${vehicle.carrocerias?.nombre || '-'}</td>
                 <td>${vehicle.color || '-'}</td>
-                <td>${vehicle.combustible || '-'}</td>
+                <td>${this.formatCombustible(vehicle.combustible)}</td>
                 <td>
                     <span class="vehicle-status status-${vehicle.estado}">
                         ${vehicle.estado}
