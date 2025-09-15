@@ -4,503 +4,610 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Véctor - Administración de Flotilla</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h2 class="logo">
-                    <i class="fas fa-car"></i>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="d-flex align-items-center">
+                <div class="logo-container">
+                    <i class="fas fa-car logo-icon"></i>
                     <span class="logo-text">Véctor</span>
-                </h2>
-                <button class="toggle-btn" id="toggleBtn">
-                    <i class="fas fa-bars"></i>
-                </button>
+                </div>
             </div>
-            
-            <nav class="sidebar-nav">
-                <ul class="nav-list">
-                    <li class="nav-item active">
-                        <a href="#" class="nav-link" data-module="vehiculos">
-                            <i class="fas fa-car"></i>
-                            <span class="nav-text">Vehículos</span>
+            <button class="btn-toggle d-none d-lg-block" id="toggleBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-nav">
+            <ul class="nav nav-pills nav-flush flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-module="vehiculos">
+                        <i class="fas fa-car nav-icon"></i>
+                        <span class="nav-text">Vehículos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <div class="nav-submenu">
+                        <a class="nav-link submenu-link" href="#" data-submodule="marcas">
+                            <i class="fas fa-tags nav-icon"></i>
+                            <span class="nav-text">Marcas</span>
                         </a>
-                        <ul class="submenu">
-                            <li class="nav-item">
-                                <a href="#" class="nav-link" data-submodule="marcas">
-                                    <i class="fas fa-tags"></i>
-                                    <span class="nav-text">Marcas</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link" data-submodule="modelos">
-                                    <i class="fas fa-car-side"></i>
-                                    <span class="nav-text">Modelos</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" class="nav-link" data-submodule="carrocerias">
-                                    <i class="fas fa-shapes"></i>
-                                    <span class="nav-text">Carrocerías</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <header class="main-header">
-                <div class="header-left">
-                    <button class="mobile-toggle" id="mobileToggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <h1 class="page-title">Vehículos</h1>
-                </div>
-                <div class="header-right">
-                    <div class="search-container">
-                        <input type="text" id="searchInput" placeholder="Buscar..." class="search-input">
-                        <i class="fas fa-search search-icon"></i>
+                        <a class="nav-link submenu-link" href="#" data-submodule="modelos">
+                            <i class="fas fa-car-side nav-icon"></i>
+                            <span class="nav-text">Modelos</span>
+                        </a>
+                        <a class="nav-link submenu-link" href="#" data-submodule="carrocerias">
+                            <i class="fas fa-shapes nav-icon"></i>
+                            <span class="nav-text">Carrocerías</span>
+                        </a>
                     </div>
-                    <button class="btn btn-primary" id="addBtn">
-                        <i class="fas fa-plus"></i>
-                        <span id="addBtnText">Agregar Vehículo</span>
-                    </button>
-                </div>
-            </header>
+                </li>
+            </ul>
+        </div>
+    </nav>
 
-            <!-- Content Area -->
-            <div class="content-area">
-                <!-- Vehicles Table -->
-                <div class="table-container" id="vehiclesTable">
-                    <div class="table-header">
-                        <h3>Lista de Vehículos</h3>
-                        <div class="table-actions">
-                            <select id="filterSelect" class="filter-select">
-                                <option value="">Todos los vehículos</option>
-                                <option value="activo">Activos</option>
-                                <option value="inactivo">Inactivos</option>
-                            </select>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="main-header bg-white shadow-sm">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-auto d-lg-none">
+                        <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
+                    <div class="col">
+                        <h1 class="page-title mb-0">Vehículos</h1>
+                        <p class="page-subtitle text-muted mb-0">Gestiona tu flotilla de vehículos</p>
+                    </div>
+                    <div class="col-auto">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="search-container">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="searchInput" placeholder="Buscar vehículos...">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" id="addBtn">
+                                <i class="fas fa-plus me-2"></i>
+                                <span id="addBtnText">Agregar Vehículo</span>
+                            </button>
                         </div>
                     </div>
-                    
-                    <div class="table-wrapper">
-                        <table class="vehicles-table">
-                            <thead>
-                                <tr>
-                                    <th>Placa</th>
-                                    <th>Marca</th>
-                                    <th>Modelo</th>
-                                    <th>Año</th>
-                                    <th>Color</th>
-                                    <th>Combustible</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="vehiclesTableBody">
-                                <!-- Vehicles will be loaded here -->
-                            </tbody>
-                        </table>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="container-fluid">
+                <!-- Vehicles Table -->
+                <div class="card shadow-sm" id="vehiclesTable">
+                    <div class="card-header bg-white border-bottom">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-car text-primary me-2"></i>
+                                    Lista de Vehículos
+                                </h5>
+                            </div>
+                            <div class="col-auto">
+                                <select class="form-select form-select-sm" id="filterSelect">
+                                    <option value="">Todos los estados</option>
+                                    <option value="activo">Activos</option>
+                                    <option value="inactivo">Inactivos</option>
+                                    <option value="mantenimiento">En mantenimiento</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="fw-semibold">Placa</th>
+                                        <th class="fw-semibold">Marca</th>
+                                        <th class="fw-semibold">Modelo</th>
+                                        <th class="fw-semibold">Año</th>
+                                        <th class="fw-semibold">Carrocería</th>
+                                        <th class="fw-semibold">Color</th>
+                                        <th class="fw-semibold">Combustible</th>
+                                        <th class="fw-semibold">Estado</th>
+                                        <th class="fw-semibold text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vehiclesTableBody">
+                                    <!-- Vehicle data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Brands Table -->
-                <div class="table-container" id="brandsTable" style="display: none;">
-                    <div class="table-header">
-                        <h3>Lista de Marcas</h3>
-                        <div class="table-actions">
-                            <select id="brandFilterSelect" class="filter-select">
-                                <option value="">Todas las marcas</option>
-                                <option value="activo">Activas</option>
-                                <option value="inactivo">Inactivas</option>
-                            </select>
+                <div class="card shadow-sm" id="brandsTable" style="display: none;">
+                    <div class="card-header bg-white border-bottom">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-tags text-primary me-2"></i>
+                                    Lista de Marcas
+                                </h5>
+                            </div>
+                            <div class="col-auto">
+                                <select class="form-select form-select-sm" id="brandFilterSelect">
+                                    <option value="">Todos los estados</option>
+                                    <option value="activo">Activas</option>
+                                    <option value="inactivo">Inactivas</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="table-wrapper">
-                        <table class="brands-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nombre</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="brandsTableBody">
-                                <!-- Brands will be loaded here -->
-                            </tbody>
-                        </table>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="fw-semibold">ID</th>
+                                        <th class="fw-semibold">Nombre</th>
+                                        <th class="fw-semibold">Estado</th>
+                                        <th class="fw-semibold text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="brandsTableBody">
+                                    <!-- Brands data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Models Table -->
-                <div class="table-container" id="modelsTable" style="display: none;">
-                    <div class="table-header">
-                        <h3>Lista de Modelos</h3>
-                        <div class="table-actions">
-                            <select id="modelBrandFilterSelect" class="filter-select">
-                                <option value="">Todas las marcas</option>
-                            </select>
-                            <select id="modelFilterSelect" class="filter-select">
-                                <option value="">Todos los modelos</option>
-                                <option value="activo">Activos</option>
-                                <option value="inactivo">Inactivos</option>
-                            </select>
+                <div class="card shadow-sm" id="modelsTable" style="display: none;">
+                    <div class="card-header bg-white border-bottom">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-car-side text-primary me-2"></i>
+                                    Lista de Modelos
+                                </h5>
+                            </div>
+                            <div class="col-auto">
+                                <div class="d-flex gap-2">
+                                    <select class="form-select form-select-sm" id="modelBrandFilterSelect">
+                                        <option value="">Todas las marcas</option>
+                                    </select>
+                                    <select class="form-select form-select-sm" id="modelFilterSelect">
+                                        <option value="">Todos los estados</option>
+                                        <option value="activo">Activos</option>
+                                        <option value="inactivo">Inactivos</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="table-wrapper">
-                        <table class="models-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nombre</th>
-                                    <th>Marca</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modelsTableBody">
-                                <!-- Models will be loaded here -->
-                            </tbody>
-                        </table>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="fw-semibold">ID</th>
+                                        <th class="fw-semibold">Nombre</th>
+                                        <th class="fw-semibold">Marca</th>
+                                        <th class="fw-semibold">Estado</th>
+                                        <th class="fw-semibold text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modelsTableBody">
+                                    <!-- Models data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Carrocerías Table -->
-                <div class="table-container" id="carroceriasTable" style="display: none;">
-                    <div class="table-header">
-                        <h3>Lista de Carrocerías</h3>
-                        <div class="table-actions">
-                            <select id="carroceriaFilterSelect" class="filter-select">
-                                <option value="">Todos los estados</option>
-                                <option value="activo">Activos</option>
-                                <option value="inactivo">Inactivos</option>
-                            </select>
+                <div class="card shadow-sm" id="carroceriasTable" style="display: none;">
+                    <div class="card-header bg-white border-bottom">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-shapes text-primary me-2"></i>
+                                    Lista de Carrocerías
+                                </h5>
+                            </div>
+                            <div class="col-auto">
+                                <select class="form-select form-select-sm" id="carroceriaFilterSelect">
+                                    <option value="">Todos los estados</option>
+                                    <option value="activo">Activos</option>
+                                    <option value="inactivo">Inactivos</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="table-wrapper">
-                        <table class="carrocerias-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nombre</th>
-                                    <th>Descripción</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="carroceriasTableBody">
-                                <!-- Carrocerías will be loaded here -->
-                            </tbody>
-                        </table>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="fw-semibold">ID</th>
+                                        <th class="fw-semibold">Nombre</th>
+                                        <th class="fw-semibold">Descripción</th>
+                                        <th class="fw-semibold">Estado</th>
+                                        <th class="fw-semibold text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="carroceriasTableBody">
+                                    <!-- Carrocerías data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Loading State -->
-                <div class="loading" id="loadingState" style="display: none;">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Cargando vehículos...</p>
+                <div class="text-center py-5" id="loadingState" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Cargando datos...</p>
                 </div>
 
-                <!-- Empty State -->
-                <div class="empty-state" id="emptyState" style="display: none;">
-                    <i class="fas fa-car"></i>
-                    <h3>No hay vehículos registrados</h3>
-                    <p>Comienza agregando tu primer vehículo a la flotilla</p>
+                <!-- Empty States -->
+                <div class="empty-state text-center py-5" id="emptyState" style="display: none;">
+                    <div class="mb-4">
+                        <i class="fas fa-car display-1 text-muted opacity-50"></i>
+                    </div>
+                    <h4 class="text-muted">No hay vehículos registrados</h4>
+                    <p class="text-muted mb-4">Comienza agregando tu primer vehículo a la flotilla</p>
                     <button class="btn btn-primary" id="addFirstBtn">
-                        <i class="fas fa-plus"></i>
+                        <i class="fas fa-plus me-2"></i>
                         <span id="addFirstBtnText">Agregar Primer Vehículo</span>
                     </button>
                 </div>
 
-                <!-- Empty State for Brands -->
-                <div class="empty-state" id="emptyBrandsState" style="display: none;">
-                    <i class="fas fa-tags"></i>
-                    <h3>No hay marcas registradas</h3>
-                    <p>Comienza agregando tu primera marca de vehículo</p>
+                <div class="empty-state text-center py-5" id="emptyBrandsState" style="display: none;">
+                    <div class="mb-4">
+                        <i class="fas fa-tags display-1 text-muted opacity-50"></i>
+                    </div>
+                    <h4 class="text-muted">No hay marcas registradas</h4>
+                    <p class="text-muted mb-4">Comienza agregando tu primera marca de vehículo</p>
                     <button class="btn btn-primary" id="addFirstBrandBtn">
-                        <i class="fas fa-plus"></i>
+                        <i class="fas fa-plus me-2"></i>
                         Agregar Primera Marca
                     </button>
                 </div>
 
-                <!-- Empty State for Models -->
-                <div class="empty-state" id="emptyModelsState" style="display: none;">
-                    <i class="fas fa-car-side"></i>
-                    <h3>No hay modelos registrados</h3>
-                    <p>Comienza agregando tu primer modelo de vehículo</p>
+                <div class="empty-state text-center py-5" id="emptyModelsState" style="display: none;">
+                    <div class="mb-4">
+                        <i class="fas fa-car-side display-1 text-muted opacity-50"></i>
+                    </div>
+                    <h4 class="text-muted">No hay modelos registrados</h4>
+                    <p class="text-muted mb-4">Comienza agregando tu primer modelo de vehículo</p>
                     <button class="btn btn-primary" id="addFirstModelBtn">
-                        <i class="fas fa-plus"></i>
+                        <i class="fas fa-plus me-2"></i>
                         Agregar Primer Modelo
                     </button>
                 </div>
 
-                <!-- Empty State for Carrocerías -->
-                <div class="empty-state" id="emptyCarroceriasState" style="display: none;">
-                    <i class="fas fa-shapes"></i>
-                    <h3>No hay carrocerías registradas</h3>
-                    <p>Comienza agregando tu primera carrocería de vehículo</p>
+                <div class="empty-state text-center py-5" id="emptyCarroceriasState" style="display: none;">
+                    <div class="mb-4">
+                        <i class="fas fa-shapes display-1 text-muted opacity-50"></i>
+                    </div>
+                    <h4 class="text-muted">No hay carrocerías registradas</h4>
+                    <p class="text-muted mb-4">Comienza agregando tu primera carrocería de vehículo</p>
                     <button class="btn btn-primary" id="addFirstCarroceriaBtn">
-                        <i class="fas fa-plus"></i>
+                        <i class="fas fa-plus me-2"></i>
                         Agregar Primera Carrocería
                     </button>
                 </div>
             </div>
-        </main>
+        </div>
+    </main>
+
+    <!-- Mobile Sidebar Offcanvas -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarOffcanvas">
+        <div class="offcanvas-header border-bottom">
+            <div class="logo-container">
+                <i class="fas fa-car logo-icon"></i>
+                <span class="logo-text">Véctor</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            <ul class="nav nav-pills nav-flush flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-module="vehiculos" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-car nav-icon"></i>
+                        <span class="nav-text">Vehículos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-submodule="marcas" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-tags nav-icon"></i>
+                        <span class="nav-text">Marcas</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-submodule="modelos" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-car-side nav-icon"></i>
+                        <span class="nav-text">Modelos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-submodule="carrocerias" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-shapes nav-icon"></i>
+                        <span class="nav-text">Carrocerías</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
 
     <!-- Vehicle Modal -->
-    <div class="modal" id="vehicleModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Agregar Vehículo</h3>
-                <button class="modal-close" id="modalClose">
-                    <i class="fas fa-times"></i>
-                </button>
+    <div class="modal fade" id="vehicleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalTitle">
+                        <i class="fas fa-car me-2"></i>
+                        Agregar Vehículo
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="modalClose"></button>
+                </div>
+                <form id="vehicleForm">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Placa <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="placa" name="placa" required maxlength="10">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Marca <span class="text-danger">*</span></label>
+                                <select class="form-select" id="marca" name="marca" required>
+                                    <option value="">Seleccionar marca...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Modelo <span class="text-danger">*</span></label>
+                                <select class="form-select" id="modelo" name="modelo" required>
+                                    <option value="">Seleccionar modelo...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Año <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="año" name="año" required min="1900" max="2030">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Carrocería</label>
+                                <select class="form-select" id="carroceria" name="carroceria">
+                                    <option value="">Seleccionar carrocería...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Cilindrada (cc)</label>
+                                <input type="number" class="form-control" id="cilindrada" name="cilindrada" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Cilindros</label>
+                                <select class="form-select" id="cilindros" name="cilindros">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="6">6</option>
+                                    <option value="8">8</option>
+                                    <option value="12">12</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Combustible</label>
+                                <select class="form-select" id="combustible" name="combustible">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="gasolina">Gasolina</option>
+                                    <option value="diesel">Diésel</option>
+                                    <option value="hibrido">Híbrido</option>
+                                    <option value="electrico">Eléctrico</option>
+                                    <option value="gas">Gas</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Transmisión</label>
+                                <select class="form-select" id="transmision" name="transmision">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Manual">Manual</option>
+                                    <option value="Automática">Automática</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Tracción</label>
+                                <select class="form-select" id="traccion" name="traccion">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="4X2">4X2</option>
+                                    <option value="4X4">4X4</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Color</label>
+                                <input type="text" class="form-control" id="color" name="color">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">VIN (Número de Identificación del Vehículo)</label>
+                                <input type="text" class="form-control" id="vin" name="vin" maxlength="17" placeholder="17 caracteres alfanuméricos">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="saveBtn">
+                            <i class="fas fa-save me-2"></i>
+                            Guardar Vehículo
+                        </button>
+                    </div>
+                </form>
             </div>
-            
-            <form class="vehicle-form" id="vehicleForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="placa">Placa *</label>
-                        <input type="text" id="placa" name="placa" required maxlength="10">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="marca">Marca *</label>
-                        <select id="marca" name="marca" required>
-                            <option value="">Seleccionar marca...</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="modelo">Modelo *</label>
-                        <select id="modelo" name="modelo" required>
-                            <option value="">Seleccionar modelo...</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="año">Año *</label>
-                        <input type="number" id="año" name="año" required min="1900" max="2030">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="carroceria">Carrocería</label>
-                        <select id="carroceria" name="carroceria">
-                            <option value="">Seleccionar carrocería...</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="cilindrada">Cilindrada (cc)</label>
-                        <input type="number" id="cilindrada" name="cilindrada" min="0">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="cilindros">Cilindros</label>
-                        <select id="cilindros" name="cilindros">
-                            <option value="">Seleccionar...</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="6">6</option>
-                            <option value="8">8</option>
-                            <option value="12">12</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="combustible">Combustible</label>
-                        <select id="combustible" name="combustible">
-                            <option value="">Seleccionar...</option>
-                            <option value="gasolina">Gasolina</option>
-                            <option value="diesel">Diésel</option>
-                            <option value="hibrido">Híbrido</option>
-                            <option value="electrico">Eléctrico</option>
-                            <option value="gas">Gas</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="transmision">Transmisión</label>
-                        <select id="transmision" name="transmision">
-                            <option value="">Seleccionar...</option>
-                            <option value="Manual">Manual</option>
-                            <option value="Automática">Automática</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="traccion">Tracción</label>
-                        <select id="traccion" name="traccion">
-                            <option value="">Seleccionar...</option>
-                            <option value="4X2">4X2</option>
-                            <option value="4X4">4X4</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="color">Color</label>
-                        <input type="text" id="color" name="color">
-                    </div>
-                    
-                    <div class="form-group full-width">
-                        <label for="vin">VIN (Número de Identificación del Vehículo)</label>
-                        <input type="text" id="vin" name="vin" maxlength="17" placeholder="17 caracteres alfanuméricos">
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="saveBtn">
-                        <i class="fas fa-save"></i>
-                        Guardar Vehículo
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 
     <!-- Brand Modal -->
-    <div class="modal" id="brandModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="brandModalTitle">Agregar Marca</h3>
-                <button class="modal-close" id="brandModalClose">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <form class="brand-form" id="brandForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="brandName">Nombre de la Marca *</label>
-                        <input type="text" id="brandName" name="brandName" required maxlength="50">
+    <div class="modal fade" id="brandModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="brandModalTitle">
+                        <i class="fas fa-tags me-2"></i>
+                        Agregar Marca
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="brandModalClose"></button>
+                </div>
+                <form id="brandForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nombre de la Marca <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="brandName" name="brandName" required maxlength="50">
+                        </div>
                     </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelBrandBtn">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="saveBrandBtn">
-                        <i class="fas fa-save"></i>
-                        Guardar Marca
-                    </button>
-                </div>
-            </form>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" id="cancelBrandBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="saveBrandBtn">
+                            <i class="fas fa-save me-2"></i>
+                            Guardar Marca
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- Model Modal -->
-    <div class="modal" id="modelModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modelModalTitle">Agregar Modelo</h3>
-                <button class="modal-close" id="modelModalClose">
-                    <i class="fas fa-times"></i>
-                </button>
+    <div class="modal fade" id="modelModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modelModalTitle">
+                        <i class="fas fa-car-side me-2"></i>
+                        Agregar Modelo
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="modelModalClose"></button>
+                </div>
+                <form id="modelForm">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Marca <span class="text-danger">*</span></label>
+                                <select class="form-select" id="modelBrand" name="modelBrand" required>
+                                    <option value="">Seleccionar marca...</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Nombre del Modelo <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="modelName" name="modelName" required maxlength="50">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" id="cancelModelBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="saveModelBtn">
+                            <i class="fas fa-save me-2"></i>
+                            Guardar Modelo
+                        </button>
+                    </div>
+                </form>
             </div>
-            
-            <form class="model-form" id="modelForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="modelBrand">Marca *</label>
-                        <select id="modelBrand" name="modelBrand" required>
-                            <option value="">Seleccionar marca...</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="modelName">Nombre del Modelo *</label>
-                        <input type="text" id="modelName" name="modelName" required maxlength="50">
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelModelBtn">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="saveModelBtn">
-                        <i class="fas fa-save"></i>
-                        Guardar Modelo
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 
     <!-- Carrocería Modal -->
-    <div class="modal" id="carroceriaModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="carroceriaModalTitle">Agregar Carrocería</h3>
-                <button class="modal-close" id="carroceriaModalClose">
-                    <i class="fas fa-times"></i>
-                </button>
+    <div class="modal fade" id="carroceriaModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="carroceriaModalTitle">
+                        <i class="fas fa-shapes me-2"></i>
+                        Agregar Carrocería
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="carroceriaModalClose"></button>
+                </div>
+                <form id="carroceriaForm">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Nombre de la Carrocería <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="carroceriaName" name="carroceriaName" required maxlength="100">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Descripción</label>
+                                <textarea class="form-control" id="carroceriaDescripcion" name="carroceriaDescripcion" rows="3" maxlength="255"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" id="cancelCarroceriaBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="saveCarroceriaBtn">
+                            <i class="fas fa-save me-2"></i>
+                            Guardar Carrocería
+                        </button>
+                    </div>
+                </form>
             </div>
-            
-            <form class="carroceria-form" id="carroceriaForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="carroceriaName">Nombre de la Carrocería *</label>
-                        <input type="text" id="carroceriaName" name="carroceriaName" required maxlength="100">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="carroceriaDescripcion">Descripción</label>
-                        <textarea id="carroceriaDescripcion" name="carroceriaDescripcion" rows="3" maxlength="255"></textarea>
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelCarroceriaBtn">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="saveCarroceriaBtn">
-                        <i class="fas fa-save"></i>
-                        Guardar Carrocería
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div class="modal" id="deleteModal">
-        <div class="modal-content small">
-            <div class="modal-header">
-                <h3 id="deleteModalTitle">Confirmar Eliminación</h3>
-                <button class="modal-close" id="deleteModalClose">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="modal-body">
-                <p id="deleteModalMessage">¿Estás seguro de que deseas eliminar este elemento?</p>
-                <p class="warning-text">Esta acción no se puede deshacer.</p>
-            </div>
-            
-            <div class="form-actions">
-                <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">Cancelar</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                    <i class="fas fa-trash"></i>
-                    Eliminar
-                </button>
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalTitle">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="deleteModalClose"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="deleteModalMessage" class="mb-3">¿Estás seguro de que deseas eliminar este elemento?</p>
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Esta acción no se puede deshacer.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash me-2"></i>
+                        Eliminar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notifications -->
-    <div class="toast-container" id="toastContainer"></div>
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
 
-    <!-- Supabase Script -->
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Supabase -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
-        // Verificar que Supabase se cargó correctamente
         window.addEventListener('load', function() {
             if (typeof window.supabase === 'undefined') {
                 console.error('❌ Error: Script de Supabase no se cargó correctamente');
@@ -510,6 +617,8 @@
             }
         });
     </script>
+    
+    <!-- Configuration and App Scripts -->
     <script src="config.js"></script>
     <script src="script.js"></script>
 </body>

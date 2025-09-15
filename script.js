@@ -1,5 +1,6 @@
 // Véctor - Sistema de Administración de Flotilla
 // JavaScript principal para la funcionalidad de la aplicación
+// Actualizado para Bootstrap 5.3
 
 class VictorApp {
     constructor() {
@@ -34,9 +35,11 @@ class VictorApp {
     
     // Configurar event listeners
     setupEventListeners() {
-        // Sidebar toggle
-        document.getElementById('toggleBtn').addEventListener('click', () => this.toggleSidebar());
-        document.getElementById('mobileToggle').addEventListener('click', () => this.toggleSidebar());
+        // Sidebar toggle (desktop)
+        const toggleBtn = document.getElementById('toggleBtn');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => this.toggleSidebar());
+        }
         
         // Navigation
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -50,29 +53,25 @@ class VictorApp {
         document.getElementById('addFirstModelBtn').addEventListener('click', () => this.showModelModal());
         document.getElementById('addFirstCarroceriaBtn').addEventListener('click', () => this.showCarroceriaModal());
         
-        // Modal events
-        document.getElementById('modalClose').addEventListener('click', () => this.hideVehicleModal());
-        document.getElementById('cancelBtn').addEventListener('click', () => this.hideVehicleModal());
-        document.getElementById('vehicleForm').addEventListener('submit', (e) => this.handleVehicleSubmit(e));
+        // Vehicle modal events
+        this.setupModalEvents('vehicleModal', 'modalClose', 'cancelBtn', 'vehicleForm', 
+                             () => this.hideVehicleModal(), (e) => this.handleVehicleSubmit(e));
         
         // Brand modal events
-        document.getElementById('brandModalClose').addEventListener('click', () => this.hideBrandModal());
-        document.getElementById('cancelBrandBtn').addEventListener('click', () => this.hideBrandModal());
-        document.getElementById('brandForm').addEventListener('submit', (e) => this.handleBrandSubmit(e));
+        this.setupModalEvents('brandModal', 'brandModalClose', 'cancelBrandBtn', 'brandForm',
+                             () => this.hideBrandModal(), (e) => this.handleBrandSubmit(e));
         
         // Model modal events
-        document.getElementById('modelModalClose').addEventListener('click', () => this.hideModelModal());
-        document.getElementById('cancelModelBtn').addEventListener('click', () => this.hideModelModal());
-        document.getElementById('modelForm').addEventListener('submit', (e) => this.handleModelSubmit(e));
+        this.setupModalEvents('modelModal', 'modelModalClose', 'cancelModelBtn', 'modelForm',
+                             () => this.hideModelModal(), (e) => this.handleModelSubmit(e));
         
         // Carrocería modal events
-        document.getElementById('carroceriaModalClose').addEventListener('click', () => this.hideCarroceriaModal());
-        document.getElementById('cancelCarroceriaBtn').addEventListener('click', () => this.hideCarroceriaModal());
-        document.getElementById('carroceriaForm').addEventListener('submit', (e) => this.handleCarroceriaSubmit(e));
+        this.setupModalEvents('carroceriaModal', 'carroceriaModalClose', 'cancelCarroceriaBtn', 'carroceriaForm',
+                             () => this.hideCarroceriaModal(), (e) => this.handleCarroceriaSubmit(e));
         
         // Delete modal events
-        document.getElementById('deleteModalClose').addEventListener('click', () => this.hideDeleteModal());
-        document.getElementById('cancelDeleteBtn').addEventListener('click', () => this.hideDeleteModal());
+        this.setupModalEvents('deleteModal', 'deleteModalClose', 'cancelDeleteBtn', null,
+                             () => this.hideDeleteModal(), null);
         document.getElementById('confirmDeleteBtn').addEventListener('click', () => this.confirmDelete());
         
         // Search and filter
@@ -85,27 +84,25 @@ class VictorApp {
         
         // Vehicle form events
         document.getElementById('marca').addEventListener('change', (e) => this.handleMarcaChange(e));
+    }
+    
+    // Configurar eventos de modal de forma genérica
+    setupModalEvents(modalId, closeId, cancelId, formId, hideFunction, submitFunction) {
+        const modal = document.getElementById(modalId);
+        const closeBtn = document.getElementById(closeId);
+        const cancelBtn = document.getElementById(cancelId);
+        const form = formId ? document.getElementById(formId) : null;
         
-        // Close modals on outside click
-        document.getElementById('vehicleModal').addEventListener('click', (e) => {
-            if (e.target.id === 'vehicleModal') this.hideVehicleModal();
-        });
+        if (closeBtn) closeBtn.addEventListener('click', hideFunction);
+        if (cancelBtn) cancelBtn.addEventListener('click', hideFunction);
+        if (form && submitFunction) form.addEventListener('submit', submitFunction);
         
-        document.getElementById('brandModal').addEventListener('click', (e) => {
-            if (e.target.id === 'brandModal') this.hideBrandModal();
-        });
-        
-        document.getElementById('modelModal').addEventListener('click', (e) => {
-            if (e.target.id === 'modelModal') this.hideModelModal();
-        });
-        
-        document.getElementById('carroceriaModal').addEventListener('click', (e) => {
-            if (e.target.id === 'carroceriaModal') this.hideCarroceriaModal();
-        });
-        
-        document.getElementById('deleteModal').addEventListener('click', (e) => {
-            if (e.target.id === 'deleteModal') this.hideDeleteModal();
-        });
+        // Close modal on backdrop click
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) hideFunction();
+            });
+        }
     }
     
     // Inicializar Supabase
@@ -142,15 +139,12 @@ class VictorApp {
         }
     }
     
-    // Toggle sidebar
+    // Toggle sidebar (solo para desktop)
     toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('collapsed');
+        const mainContent = document.querySelector('.main-content');
         
-        // En móviles, mostrar/ocultar sidebar
-        if (window.innerWidth <= 768) {
-            sidebar.classList.toggle('show');
-        }
+        sidebar.classList.toggle('collapsed');
     }
     
     // Manejar navegación
@@ -162,12 +156,12 @@ class VictorApp {
         const submodule = link.dataset.submodule;
         
         // Remover clase active de todos los elementos
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active');
+        document.querySelectorAll('.nav-link').forEach(navLink => {
+            navLink.classList.remove('active');
         });
         
         // Agregar clase active al elemento clickeado
-        e.target.closest('.nav-item').classList.add('active');
+        link.classList.add('active');
         
         if (submodule) {
             this.currentSubModule = submodule;
@@ -214,13 +208,8 @@ class VictorApp {
     // Mostrar módulo de vehículos
     async showVehiclesModule() {
         // Ocultar otras tablas y mostrar tabla de vehículos
-        document.getElementById('brandsTable').style.display = 'none';
-        document.getElementById('modelsTable').style.display = 'none';
-        document.getElementById('carroceriasTable').style.display = 'none';
+        this.hideAllTables();
         document.getElementById('vehiclesTable').style.display = 'block';
-        document.getElementById('emptyBrandsState').style.display = 'none';
-        document.getElementById('emptyModelsState').style.display = 'none';
-        document.getElementById('emptyCarroceriasState').style.display = 'none';
         
         // Actualizar botones
         document.getElementById('addBtnText').textContent = 'Agregar Vehículo';
@@ -232,14 +221,8 @@ class VictorApp {
     
     // Mostrar módulo de marcas
     showBrandsModule() {
-        // Ocultar otras tablas y mostrar tabla de marcas
-        document.getElementById('vehiclesTable').style.display = 'none';
-        document.getElementById('modelsTable').style.display = 'none';
-        document.getElementById('carroceriasTable').style.display = 'none';
+        this.hideAllTables();
         document.getElementById('brandsTable').style.display = 'block';
-        document.getElementById('emptyState').style.display = 'none';
-        document.getElementById('emptyModelsState').style.display = 'none';
-        document.getElementById('emptyCarroceriasState').style.display = 'none';
         
         // Actualizar botones
         document.getElementById('addBtnText').textContent = 'Agregar Marca';
@@ -251,14 +234,8 @@ class VictorApp {
     
     // Mostrar módulo de modelos
     showModelsModule() {
-        // Ocultar otras tablas y mostrar tabla de modelos
-        document.getElementById('vehiclesTable').style.display = 'none';
-        document.getElementById('brandsTable').style.display = 'none';
-        document.getElementById('carroceriasTable').style.display = 'none';
+        this.hideAllTables();
         document.getElementById('modelsTable').style.display = 'block';
-        document.getElementById('emptyState').style.display = 'none';
-        document.getElementById('emptyBrandsState').style.display = 'none';
-        document.getElementById('emptyCarroceriasState').style.display = 'none';
         
         // Actualizar botones
         document.getElementById('addBtnText').textContent = 'Agregar Modelo';
@@ -270,14 +247,8 @@ class VictorApp {
     
     // Mostrar módulo de carrocerías
     showCarroceriasModule() {
-        // Ocultar otras tablas y mostrar tabla de carrocerías
-        document.getElementById('vehiclesTable').style.display = 'none';
-        document.getElementById('brandsTable').style.display = 'none';
-        document.getElementById('modelsTable').style.display = 'none';
+        this.hideAllTables();
         document.getElementById('carroceriasTable').style.display = 'block';
-        document.getElementById('emptyState').style.display = 'none';
-        document.getElementById('emptyBrandsState').style.display = 'none';
-        document.getElementById('emptyModelsState').style.display = 'none';
         
         // Actualizar botones
         document.getElementById('addBtnText').textContent = 'Agregar Carrocería';
@@ -285,6 +256,20 @@ class VictorApp {
         
         // Cargar carrocerías
         this.loadCarrocerias(true);
+    }
+    
+    // Ocultar todas las tablas y estados vacíos
+    hideAllTables() {
+        const tables = ['vehiclesTable', 'brandsTable', 'modelsTable', 'carroceriasTable'];
+        const emptyStates = ['emptyState', 'emptyBrandsState', 'emptyModelsState', 'emptyCarroceriasState'];
+        
+        tables.forEach(tableId => {
+            document.getElementById(tableId).style.display = 'none';
+        });
+        
+        emptyStates.forEach(stateId => {
+            document.getElementById(stateId).style.display = 'none';
+        });
     }
     
     // Cargar datos iniciales en orden correcto
@@ -506,7 +491,7 @@ class VictorApp {
         
         tbody.innerHTML = this.vehicles.map(vehicle => `
             <tr>
-                <td><strong>${vehicle.placa}</strong></td>
+                <td><strong class="text-navy">${vehicle.placa}</strong></td>
                 <td>${vehicle.marcas?.nombre || '-'}</td>
                 <td>${vehicle.modelos?.nombre || '-'}</td>
                 <td>${vehicle.año}</td>
@@ -550,8 +535,8 @@ class VictorApp {
         
         tbody.innerHTML = this.brands.map(brand => `
             <tr>
-                <td>${brand.id}</td>
-                <td><strong>${brand.nombre}</strong></td>
+                <td><span class="badge bg-secondary">${brand.id}</span></td>
+                <td><strong class="text-navy">${brand.nombre}</strong></td>
                 <td>
                     <span class="vehicle-status status-${brand.estado}">
                         ${brand.estado}
@@ -589,8 +574,8 @@ class VictorApp {
         
         tbody.innerHTML = this.models.map(model => `
             <tr>
-                <td>${model.id}</td>
-                <td><strong>${model.nombre}</strong></td>
+                <td><span class="badge bg-secondary">${model.id}</span></td>
+                <td><strong class="text-navy">${model.nombre}</strong></td>
                 <td>${model.marcas?.nombre || '-'}</td>
                 <td>
                     <span class="vehicle-status status-${model.estado}">
@@ -629,8 +614,8 @@ class VictorApp {
         
         tbody.innerHTML = this.carrocerias.map(carroceria => `
             <tr>
-                <td>${carroceria.id}</td>
-                <td><strong>${carroceria.nombre}</strong></td>
+                <td><span class="badge bg-secondary">${carroceria.id}</span></td>
+                <td><strong class="text-navy">${carroceria.nombre}</strong></td>
                 <td>${carroceria.descripcion || '-'}</td>
                 <td>
                     <span class="vehicle-status status-${carroceria.estado}">
@@ -664,9 +649,10 @@ class VictorApp {
         }
     }
     
-    // Mostrar modal de vehículo
+    // Mostrar modal de vehículo usando Bootstrap Modal
     async showVehicleModal(vehicle = null) {
-        const modal = document.getElementById('vehicleModal');
+        const modalElement = document.getElementById('vehicleModal');
+        const modal = new bootstrap.Modal(modalElement);
         const modalTitle = document.getElementById('modalTitle');
         const form = document.getElementById('vehicleForm');
         
@@ -674,9 +660,9 @@ class VictorApp {
         this.isEditing = !!vehicle;
         
         if (this.isEditing) {
-            modalTitle.textContent = 'Editar Vehículo';
+            modalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Editar Vehículo';
         } else {
-            modalTitle.textContent = 'Agregar Vehículo';
+            modalTitle.innerHTML = '<i class="fas fa-car me-2"></i>Agregar Vehículo';
             form.reset();
         }
         
@@ -690,29 +676,21 @@ class VictorApp {
         this.populateBrandsDropdown();
         this.populateCarroceriasDropdown();
         
-        modal.classList.add('show');
-        modal.style.display = 'flex';
+        modal.show();
         
         // Si está editando, llenar el formulario y cargar modelos DESPUÉS de mostrar el modal
         if (this.isEditing) {
-            // Usar setTimeout para asegurar que los selectores estén listos
             setTimeout(() => {
-                // Primero llenar los campos normales
                 this.populateFormFields(vehicle);
                 
-                // Luego establecer la marca
                 if (vehicle.marca_id || vehicle.marca) {
                     const marcaId = vehicle.marca_id || vehicle.marca;
                     console.log('Estableciendo marca con ID:', marcaId);
                     const marcaSelect = document.getElementById('marca');
                     if (marcaSelect) {
                         marcaSelect.value = marcaId;
-                        console.log('Marca establecida:', marcaSelect.value);
-                        
-                        // Cargar modelos de esta marca
                         this.populateModelsDropdown(marcaId);
                         
-                        // Establecer el modelo después de cargar las opciones
                         setTimeout(() => {
                             if (vehicle.modelo_id || vehicle.modelo) {
                                 const modeloId = vehicle.modelo_id || vehicle.modelo;
@@ -720,7 +698,6 @@ class VictorApp {
                                 const modeloSelect = document.getElementById('modelo');
                                 if (modeloSelect) {
                                     modeloSelect.value = modeloId;
-                                    console.log('Modelo establecido:', modeloSelect.value);
                                 }
                             }
                         }, 50);
@@ -737,17 +714,20 @@ class VictorApp {
     
     // Ocultar modal de vehículo
     hideVehicleModal() {
-        const modal = document.getElementById('vehicleModal');
-        modal.classList.remove('show');
-        modal.style.display = 'none';
+        const modalElement = document.getElementById('vehicleModal');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
         
         this.currentVehicle = null;
         this.isEditing = false;
     }
     
-    // Mostrar modal de marca
+    // Mostrar modal de marca usando Bootstrap Modal
     showBrandModal(brand = null) {
-        const modal = document.getElementById('brandModal');
+        const modalElement = document.getElementById('brandModal');
+        const modal = new bootstrap.Modal(modalElement);
         const modalTitle = document.getElementById('brandModalTitle');
         const form = document.getElementById('brandForm');
         
@@ -755,17 +735,15 @@ class VictorApp {
         this.isEditingBrand = !!brand;
         
         if (this.isEditingBrand) {
-            modalTitle.textContent = 'Editar Marca';
+            modalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Editar Marca';
             this.populateBrandForm(brand);
         } else {
-            modalTitle.textContent = 'Agregar Marca';
+            modalTitle.innerHTML = '<i class="fas fa-tags me-2"></i>Agregar Marca';
             form.reset();
         }
         
-        modal.classList.add('show');
-        modal.style.display = 'flex';
+        modal.show();
         
-        // Focus en el primer campo
         setTimeout(() => {
             document.getElementById('brandName').focus();
         }, 100);
@@ -773,22 +751,20 @@ class VictorApp {
     
     // Ocultar modal de marca
     hideBrandModal() {
-        const modal = document.getElementById('brandModal');
-        modal.classList.remove('show');
-        modal.style.display = 'none';
+        const modalElement = document.getElementById('brandModal');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
         
         this.currentBrand = null;
         this.isEditingBrand = false;
     }
     
-    // Llenar formulario de marca con datos
-    populateBrandForm(brand) {
-        document.getElementById('brandName').value = brand.nombre || '';
-    }
-    
-    // Mostrar modal de modelo
+    // Mostrar modal de modelo usando Bootstrap Modal
     showModelModal(model = null) {
-        const modal = document.getElementById('modelModal');
+        const modalElement = document.getElementById('modelModal');
+        const modal = new bootstrap.Modal(modalElement);
         const modalTitle = document.getElementById('modelModalTitle');
         const form = document.getElementById('modelForm');
         
@@ -796,20 +772,18 @@ class VictorApp {
         this.isEditingModel = !!model;
         
         if (this.isEditingModel) {
-            modalTitle.textContent = 'Editar Modelo';
+            modalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Editar Modelo';
             this.populateModelForm(model);
         } else {
-            modalTitle.textContent = 'Agregar Modelo';
+            modalTitle.innerHTML = '<i class="fas fa-car-side me-2"></i>Agregar Modelo';
             form.reset();
         }
         
         // Llenar selector de marcas
         this.populateModelBrandSelector();
         
-        modal.classList.add('show');
-        modal.style.display = 'flex';
+        modal.show();
         
-        // Focus en el primer campo
         setTimeout(() => {
             document.getElementById('modelBrand').focus();
         }, 100);
@@ -817,17 +791,20 @@ class VictorApp {
     
     // Ocultar modal de modelo
     hideModelModal() {
-        const modal = document.getElementById('modelModal');
-        modal.classList.remove('show');
-        modal.style.display = 'none';
+        const modalElement = document.getElementById('modelModal');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
         
         this.currentModel = null;
         this.isEditingModel = false;
     }
     
-    // Mostrar modal de carrocería
+    // Mostrar modal de carrocería usando Bootstrap Modal
     showCarroceriaModal(carroceria = null) {
-        const modal = document.getElementById('carroceriaModal');
+        const modalElement = document.getElementById('carroceriaModal');
+        const modal = new bootstrap.Modal(modalElement);
         const modalTitle = document.getElementById('carroceriaModalTitle');
         const form = document.getElementById('carroceriaForm');
         
@@ -835,17 +812,15 @@ class VictorApp {
         this.isEditingCarroceria = !!carroceria;
         
         if (this.isEditingCarroceria) {
-            modalTitle.textContent = 'Editar Carrocería';
+            modalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Editar Carrocería';
             this.populateCarroceriaForm(carroceria);
         } else {
-            modalTitle.textContent = 'Agregar Carrocería';
+            modalTitle.innerHTML = '<i class="fas fa-shapes me-2"></i>Agregar Carrocería';
             form.reset();
         }
         
-        modal.classList.add('show');
-        modal.style.display = 'flex';
+        modal.show();
         
-        // Focus en el primer campo
         setTimeout(() => {
             document.getElementById('carroceriaName').focus();
         }, 100);
@@ -853,24 +828,154 @@ class VictorApp {
     
     // Ocultar modal de carrocería
     hideCarroceriaModal() {
-        const modal = document.getElementById('carroceriaModal');
-        modal.classList.remove('show');
-        modal.style.display = 'none';
+        const modalElement = document.getElementById('carroceriaModal');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
         
         this.currentCarroceria = null;
         this.isEditingCarroceria = false;
     }
     
-    // Llenar formulario de carrocería con datos
-    populateCarroceriaForm(carroceria) {
-        document.getElementById('carroceriaName').value = carroceria.nombre || '';
-        document.getElementById('carroceriaDescripcion').value = carroceria.descripcion || '';
+    // Mostrar modal de confirmación de eliminación
+    showDeleteModal() {
+        const modalElement = document.getElementById('deleteModal');
+        const modal = new bootstrap.Modal(modalElement);
+        const title = document.getElementById('deleteModalTitle');
+        const message = document.getElementById('deleteModalMessage');
+        
+        if (this.currentVehicle) {
+            title.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación de Vehículo';
+            message.textContent = `¿Estás seguro de que deseas eliminar el vehículo ${this.currentVehicle.placa}?`;
+        } else if (this.currentBrand) {
+            title.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación de Marca';
+            message.textContent = `¿Estás seguro de que deseas eliminar la marca ${this.currentBrand.nombre}?`;
+        } else if (this.currentModel) {
+            title.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación de Modelo';
+            message.textContent = `¿Estás seguro de que deseas eliminar el modelo ${this.currentModel.nombre}?`;
+        } else if (this.currentCarroceria) {
+            title.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación de Carrocería';
+            message.textContent = `¿Estás seguro de que deseas eliminar la carrocería ${this.currentCarroceria.nombre}?`;
+        }
+        
+        modal.show();
+    }
+    
+    // Ocultar modal de confirmación de eliminación
+    hideDeleteModal() {
+        const modalElement = document.getElementById('deleteModal');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+        
+        this.currentVehicle = null;
+        this.currentBrand = null;
+        this.currentModel = null;
+        this.currentCarroceria = null;
+    }
+    
+    // [Las demás funciones permanecen iguales, solo cambio el sistema de toasts]
+    
+    // Mostrar notificación toast usando Bootstrap Toast
+    showToast(message, type = 'info') {
+        const toastContainer = document.getElementById('toastContainer');
+        
+        const toastId = 'toast-' + Date.now();
+        const iconMap = {
+            success: 'fas fa-check-circle text-success',
+            error: 'fas fa-exclamation-circle text-danger',
+            warning: 'fas fa-exclamation-triangle text-warning',
+            info: 'fas fa-info-circle text-primary'
+        };
+        
+        const borderClass = type === 'success' ? 'border-success' : 
+                           type === 'error' ? 'border-danger' :
+                           type === 'warning' ? 'border-warning' : 'border-primary';
+        
+        const toastHTML = `
+            <div class="toast ${borderClass}" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="${iconMap[type]} me-2"></i>
+                    <span class="flex-grow-1">${message}</span>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+        
+        // Remover el elemento después de que se oculte
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
+        });
+    }
+    
+    // Mostrar/ocultar estado de carga
+    showLoading(show) {
+        const loadingState = document.getElementById('loadingState');
+        const contentArea = document.querySelector('.content-area');
+        
+        if (show) {
+            loadingState.style.display = 'block';
+            contentArea.style.opacity = '0.5';
+        } else {
+            loadingState.style.display = 'none';
+            contentArea.style.opacity = '1';
+        }
+    }
+    
+    // [Todas las demás funciones del archivo original permanecen iguales - CRUD, filtros, búsqueda, etc.]
+    
+    // Llenar campos normales del formulario (sin selectores)
+    populateFormFields(vehicle) {
+        console.log('Llenando campos del formulario con vehículo:', vehicle);
+        
+        const fields = [
+            'placa', 'año', 
+            'cilindrada', 'cilindros', 'combustible', 'transmision', 
+            'traccion', 'color', 'vin'
+        ];
+        
+        // Llenar campos normales
+        fields.forEach(field => {
+            const element = document.getElementById(field);
+            if (element && vehicle[field]) {
+                element.value = vehicle[field];
+            }
+        });
+        
+        // Llenar carrocería con ID
+        if (vehicle.carroceria_id) {
+            console.log('Estableciendo carrocería_id:', vehicle.carroceria_id);
+            const carroceriaSelect = document.getElementById('carroceria');
+            if (carroceriaSelect) {
+                carroceriaSelect.value = vehicle.carroceria_id;
+                console.log('Carrocería establecida:', carroceriaSelect.value);
+            }
+        }
+    }
+    
+    // Llenar formulario de marca con datos
+    populateBrandForm(brand) {
+        document.getElementById('brandName').value = brand.nombre || '';
     }
     
     // Llenar formulario de modelo con datos
     populateModelForm(model) {
         document.getElementById('modelBrand').value = model.marca_id || '';
         document.getElementById('modelName').value = model.nombre || '';
+    }
+    
+    // Llenar formulario de carrocería con datos
+    populateCarroceriaForm(carroceria) {
+        document.getElementById('carroceriaName').value = carroceria.nombre || '';
+        document.getElementById('carroceriaDescripcion').value = carroceria.descripcion || '';
     }
     
     // Llenar selector de marcas en el modal de modelo
@@ -915,72 +1020,101 @@ class VictorApp {
         }
     }
     
-    // Llenar campos normales del formulario (sin selectores)
-    populateFormFields(vehicle) {
-        console.log('Llenando campos del formulario con vehículo:', vehicle);
+    // Manejar cambio de marca en vehículo
+    handleMarcaChange(e) {
+        const marcaId = e.target.value;
+        this.populateModelsDropdown(marcaId);
+    }
+    
+    // Llenar selector de modelos según la marca seleccionada
+    populateModelsDropdown(marcaId) {
+        const selector = document.getElementById('modelo');
+        const currentValue = selector.value;
         
-        const fields = [
-            'placa', 'año', 
-            'cilindrada', 'cilindros', 'combustible', 'transmision', 
-            'traccion', 'color', 'vin'
-        ];
+        console.log('Llenando selector de modelos para marca ID:', marcaId);
+        console.log('Total modelos disponibles:', this.models.length);
+        console.log('Modelos disponibles:', this.models);
         
-        // Llenar campos normales
-        fields.forEach(field => {
-            const element = document.getElementById(field);
-            if (element && vehicle[field]) {
-                element.value = vehicle[field];
-            }
-        });
+        selector.innerHTML = '<option value="">Seleccionar modelo...</option>';
         
-        // Llenar carrocería con ID
-        if (vehicle.carroceria_id) {
-            console.log('Estableciendo carrocería_id:', vehicle.carroceria_id);
-            const carroceriaSelect = document.getElementById('carroceria');
-            if (carroceriaSelect) {
-                carroceriaSelect.value = vehicle.carroceria_id;
-                console.log('Carrocería establecida:', carroceriaSelect.value);
-            }
+        if (marcaId) {
+            const modelsForBrand = this.models.filter(model => 
+                model.marca_id == marcaId && model.estado === 'activo'
+            );
+            
+            console.log('Modelos para marca', marcaId, ':', modelsForBrand);
+            
+            modelsForBrand.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.nombre;
+                selector.appendChild(option);
+                console.log('Agregado modelo:', model.nombre, 'ID:', model.id);
+            });
+        }
+        
+        console.log('Opciones en selector de modelo:', selector.options.length);
+        
+        if (currentValue) {
+            selector.value = currentValue;
         }
     }
     
-    // Llenar formulario con datos del vehículo (función original mantenida para compatibilidad)
-    populateForm(vehicle) {
-        console.log('Llenando formulario con vehículo:', vehicle);
+    // Llenar selector de marcas en el modal de vehículo
+    populateBrandsDropdown() {
+        const selector = document.getElementById('marca');
+        const currentValue = selector.value;
         
-        const fields = [
-            'placa', 'año', 'carroceria', 
-            'cilindrada', 'cilindros', 'combustible', 'transmision', 
-            'traccion', 'color', 'vin'
-        ];
+        console.log('Llenando selector de marcas. Total marcas:', this.brands.length);
+        console.log('Marcas disponibles:', this.brands);
         
-        // Llenar campos normales
-        fields.forEach(field => {
-            const element = document.getElementById(field);
-            if (element && vehicle[field]) {
-                element.value = vehicle[field];
+        selector.innerHTML = '<option value="">Seleccionar marca...</option>';
+        
+        this.brands.forEach(brand => {
+            if (brand.estado === 'activo') {
+                const option = document.createElement('option');
+                option.value = brand.id;
+                option.textContent = brand.nombre;
+                selector.appendChild(option);
+                console.log('Agregada marca:', brand.nombre, 'ID:', brand.id);
             }
         });
         
-        // Llenar selectores de marca y modelo con los IDs
-        if (vehicle.marca_id) {
-            console.log('Estableciendo marca_id:', vehicle.marca_id);
-            const marcaSelect = document.getElementById('marca');
-            if (marcaSelect) {
-                marcaSelect.value = vehicle.marca_id;
-                console.log('Marca establecida:', marcaSelect.value);
-            }
-        }
+        console.log('Opciones en selector de marca:', selector.options.length);
         
-        if (vehicle.modelo_id) {
-            console.log('Estableciendo modelo_id:', vehicle.modelo_id);
-            const modeloSelect = document.getElementById('modelo');
-            if (modeloSelect) {
-                modeloSelect.value = vehicle.modelo_id;
-                console.log('Modelo establecido:', modeloSelect.value);
-            }
+        if (currentValue) {
+            selector.value = currentValue;
         }
     }
+    
+    // Llenar selector de carrocerías en el modal de vehículo
+    populateCarroceriasDropdown() {
+        const selector = document.getElementById('carroceria');
+        const currentValue = selector.value;
+        
+        console.log('Llenando selector de carrocerías. Total carrocerías:', this.carrocerias.length);
+        console.log('Carrocerías disponibles:', this.carrocerias);
+        
+        selector.innerHTML = '<option value="">Seleccionar carrocería...</option>';
+        
+        this.carrocerias.forEach(carroceria => {
+            if (carroceria.estado === 'activo') {
+                const option = document.createElement('option');
+                option.value = carroceria.id;
+                option.textContent = carroceria.nombre;
+                selector.appendChild(option);
+                console.log('Agregada carrocería:', carroceria.nombre, 'ID:', carroceria.id);
+            }
+        });
+        
+        console.log('Opciones en selector de carrocería:', selector.options.length);
+        
+        if (currentValue) {
+            selector.value = currentValue;
+        }
+    }
+    
+    // ===== CRUD OPERATIONS - [El resto de las funciones permanecen igual] =====
     
     // Manejar envío del formulario
     async handleVehicleSubmit(e) {
@@ -1041,7 +1175,6 @@ class VictorApp {
             return;
         }
         
-        
         try {
             this.showLoading(true);
             
@@ -1062,6 +1195,78 @@ class VictorApp {
         }
     }
     
+    // Manejar envío del formulario de modelo
+    async handleModelSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const modelData = Object.fromEntries(formData.entries());
+        
+        // Validar campos requeridos
+        if (!modelData.modelBrand) {
+            this.showToast('Por favor, selecciona una marca', 'error');
+            return;
+        }
+        
+        if (!modelData.modelName) {
+            this.showToast('Por favor, ingresa el nombre del modelo', 'error');
+            return;
+        }
+        
+        try {
+            this.showLoading(true);
+            
+            if (this.isEditingModel) {
+                await this.updateModel(modelData);
+            } else {
+                await this.createModel(modelData);
+            }
+            
+            this.hideModelModal();
+            this.loadModels(true);
+            
+        } catch (error) {
+            console.error('Error al guardar modelo:', error);
+            this.showToast('Error al guardar modelo: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
+    // Manejar envío del formulario de carrocería
+    async handleCarroceriaSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const carroceriaData = Object.fromEntries(formData.entries());
+        
+        // Validar campos requeridos
+        if (!carroceriaData.carroceriaName) {
+            this.showToast('Por favor, ingresa el nombre de la carrocería', 'error');
+            return;
+        }
+        
+        try {
+            this.showLoading(true);
+            
+            if (this.isEditingCarroceria) {
+                await this.updateCarroceria(carroceriaData);
+            } else {
+                await this.createCarroceria(carroceriaData);
+            }
+            
+            this.hideCarroceriaModal();
+            this.loadCarrocerias(true);
+            
+        } catch (error) {
+            console.error('Error al guardar carrocería:', error);
+            this.showToast('Error al guardar carrocería: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
+    // [Todas las demás funciones CRUD permanecen exactamente iguales]
     // Crear nuevo vehículo
     async createVehicle(vehicleData) {
         if (!supabase) {
@@ -1173,78 +1378,6 @@ class VictorApp {
         return data[0];
     }
     
-    // Editar vehículo
-    editVehicle(id) {
-        const vehicle = this.vehicles.find(v => v.id === id);
-        if (vehicle) {
-            this.showVehicleModal(vehicle);
-        }
-    }
-    
-    // Eliminar vehículo
-    deleteVehicle(id) {
-        const vehicle = this.vehicles.find(v => v.id === id);
-        if (vehicle) {
-            this.currentVehicle = vehicle;
-            this.showDeleteModal();
-        }
-    }
-    
-    // Editar marca
-    editBrand(id) {
-        const brand = this.brands.find(b => b.id === id);
-        if (brand) {
-            this.showBrandModal(brand);
-        }
-    }
-    
-    // Eliminar marca
-    deleteBrand(id) {
-        const brand = this.brands.find(b => b.id === id);
-        if (brand) {
-            this.currentBrand = brand;
-            this.showDeleteModal();
-        }
-    }
-    
-    // Manejar envío del formulario de modelo
-    async handleModelSubmit(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        const modelData = Object.fromEntries(formData.entries());
-        
-        // Validar campos requeridos
-        if (!modelData.modelBrand) {
-            this.showToast('Por favor, selecciona una marca', 'error');
-            return;
-        }
-        
-        if (!modelData.modelName) {
-            this.showToast('Por favor, ingresa el nombre del modelo', 'error');
-            return;
-        }
-        
-        try {
-            this.showLoading(true);
-            
-            if (this.isEditingModel) {
-                await this.updateModel(modelData);
-            } else {
-                await this.createModel(modelData);
-            }
-            
-            this.hideModelModal();
-            this.loadModels(true);
-            
-        } catch (error) {
-            console.error('Error al guardar modelo:', error);
-            this.showToast('Error al guardar modelo: ' + error.message, 'error');
-        } finally {
-            this.showLoading(false);
-        }
-    }
-    
     // Crear nuevo modelo
     async createModel(modelData) {
         if (!supabase) {
@@ -1290,56 +1423,6 @@ class VictorApp {
         
         this.showToast('Modelo actualizado exitosamente', 'success');
         return data[0];
-    }
-    
-    // Editar modelo
-    editModel(id) {
-        const model = this.models.find(m => m.id === id);
-        if (model) {
-            this.showModelModal(model);
-        }
-    }
-    
-    // Eliminar modelo
-    deleteModel(id) {
-        const model = this.models.find(m => m.id === id);
-        if (model) {
-            this.currentModel = model;
-            this.showDeleteModal();
-        }
-    }
-    
-    // Manejar envío del formulario de carrocería
-    async handleCarroceriaSubmit(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        const carroceriaData = Object.fromEntries(formData.entries());
-        
-        // Validar campos requeridos
-        if (!carroceriaData.carroceriaName) {
-            this.showToast('Por favor, ingresa el nombre de la carrocería', 'error');
-            return;
-        }
-        
-        try {
-            this.showLoading(true);
-            
-            if (this.isEditingCarroceria) {
-                await this.updateCarroceria(carroceriaData);
-            } else {
-                await this.createCarroceria(carroceriaData);
-            }
-            
-            this.hideCarroceriaModal();
-            this.loadCarrocerias(true);
-            
-        } catch (error) {
-            console.error('Error al guardar carrocería:', error);
-            this.showToast('Error al guardar carrocería: ' + error.message, 'error');
-        } finally {
-            this.showLoading(false);
-        }
     }
     
     // Crear nueva carrocería
@@ -1389,6 +1472,57 @@ class VictorApp {
         return data[0];
     }
     
+    // Editar vehículo
+    editVehicle(id) {
+        const vehicle = this.vehicles.find(v => v.id === id);
+        if (vehicle) {
+            this.showVehicleModal(vehicle);
+        }
+    }
+    
+    // Eliminar vehículo
+    deleteVehicle(id) {
+        const vehicle = this.vehicles.find(v => v.id === id);
+        if (vehicle) {
+            this.currentVehicle = vehicle;
+            this.showDeleteModal();
+        }
+    }
+    
+    // Editar marca
+    editBrand(id) {
+        const brand = this.brands.find(b => b.id === id);
+        if (brand) {
+            this.showBrandModal(brand);
+        }
+    }
+    
+    // Eliminar marca
+    deleteBrand(id) {
+        const brand = this.brands.find(b => b.id === id);
+        if (brand) {
+            this.currentBrand = brand;
+            this.showDeleteModal();
+        }
+    }
+    
+    // Editar modelo
+    editModel(id) {
+        const model = this.models.find(m => m.id === id);
+        if (model) {
+            this.showModelModal(model);
+        }
+    }
+    
+    // Eliminar modelo
+    deleteModel(id) {
+        const model = this.models.find(m => m.id === id);
+        if (model) {
+            this.currentModel = model;
+            this.showDeleteModal();
+        }
+    }
+    
     // Editar carrocería
     editCarroceria(id) {
         const carroceria = this.carrocerias.find(c => c.id === id);
@@ -1404,136 +1538,6 @@ class VictorApp {
             this.currentCarroceria = carroceria;
             this.showDeleteModal();
         }
-    }
-    
-    // Manejar cambio de marca en vehículo
-    handleMarcaChange(e) {
-        const marcaId = e.target.value;
-        this.populateModelsDropdown(marcaId);
-    }
-    
-    // Llenar selector de modelos según la marca seleccionada
-    populateModelsDropdown(marcaId) {
-        const selector = document.getElementById('modelo');
-        const currentValue = selector.value;
-        
-        console.log('Llenando selector de modelos para marca ID:', marcaId);
-        console.log('Total modelos disponibles:', this.models.length);
-        console.log('Modelos disponibles:', this.models);
-        
-        selector.innerHTML = '<option value="">Seleccionar modelo...</option>';
-        
-        if (marcaId) {
-            const modelsForBrand = this.models.filter(model => 
-                model.marca_id == marcaId && model.estado === 'activo'
-            );
-            
-            console.log('Modelos para marca', marcaId, ':', modelsForBrand);
-            
-            modelsForBrand.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model.id;
-                option.textContent = model.nombre;
-                selector.appendChild(option);
-                console.log('Agregado modelo:', model.nombre, 'ID:', model.id);
-            });
-        }
-        
-        console.log('Opciones en selector de modelo:', selector.options.length);
-        
-        if (currentValue) {
-            selector.value = currentValue;
-        }
-    }
-    
-    // Llenar selector de marcas en el modal de vehículo
-    populateBrandsDropdown() {
-        const selector = document.getElementById('marca');
-        const currentValue = selector.value;
-        
-        console.log('Llenando selector de marcas. Total marcas:', this.brands.length);
-        console.log('Marcas disponibles:', this.brands);
-        
-        selector.innerHTML = '<option value="">Seleccionar marca...</option>';
-        
-        this.brands.forEach(brand => {
-            if (brand.estado === 'activo') {
-                const option = document.createElement('option');
-                option.value = brand.id;
-                option.textContent = brand.nombre;
-                selector.appendChild(option);
-                console.log('Agregada marca:', brand.nombre, 'ID:', brand.id);
-            }
-        });
-        
-        console.log('Opciones en selector de marca:', selector.options.length);
-        
-        if (currentValue) {
-            selector.value = currentValue;
-        }
-    }
-    
-    // Llenar selector de carrocerías en el modal de vehículo
-    populateCarroceriasDropdown() {
-        const selector = document.getElementById('carroceria');
-        const currentValue = selector.value;
-        
-        console.log('Llenando selector de carrocerías. Total carrocerías:', this.carrocerias.length);
-        console.log('Carrocerías disponibles:', this.carrocerias);
-        
-        selector.innerHTML = '<option value="">Seleccionar carrocería...</option>';
-        
-        this.carrocerias.forEach(carroceria => {
-            if (carroceria.estado === 'activo') {
-                const option = document.createElement('option');
-                option.value = carroceria.id;
-                option.textContent = carroceria.nombre;
-                selector.appendChild(option);
-                console.log('Agregada carrocería:', carroceria.nombre, 'ID:', carroceria.id);
-            }
-        });
-        
-        console.log('Opciones en selector de carrocería:', selector.options.length);
-        
-        if (currentValue) {
-            selector.value = currentValue;
-        }
-    }
-    
-    // Mostrar modal de confirmación de eliminación
-    showDeleteModal() {
-        const modal = document.getElementById('deleteModal');
-        const title = document.getElementById('deleteModalTitle');
-        const message = document.getElementById('deleteModalMessage');
-        
-        if (this.currentVehicle) {
-            title.textContent = 'Confirmar Eliminación de Vehículo';
-            message.textContent = `¿Estás seguro de que deseas eliminar el vehículo ${this.currentVehicle.placa}?`;
-        } else if (this.currentBrand) {
-            title.textContent = 'Confirmar Eliminación de Marca';
-            message.textContent = `¿Estás seguro de que deseas eliminar la marca ${this.currentBrand.nombre}?`;
-        } else if (this.currentModel) {
-            title.textContent = 'Confirmar Eliminación de Modelo';
-            message.textContent = `¿Estás seguro de que deseas eliminar el modelo ${this.currentModel.nombre}?`;
-        } else if (this.currentCarroceria) {
-            title.textContent = 'Confirmar Eliminación de Carrocería';
-            message.textContent = `¿Estás seguro de que deseas eliminar la carrocería ${this.currentCarroceria.nombre}?`;
-        }
-        
-        modal.classList.add('show');
-        modal.style.display = 'flex';
-    }
-    
-    // Ocultar modal de confirmación de eliminación
-    hideDeleteModal() {
-        const modal = document.getElementById('deleteModal');
-        modal.classList.remove('show');
-        modal.style.display = 'none';
-        
-        this.currentVehicle = null;
-        this.currentBrand = null;
-        this.currentModel = null;
-        this.currentCarroceria = null;
     }
     
     // Confirmar eliminación
@@ -1612,6 +1616,8 @@ class VictorApp {
             this.showLoading(false);
         }
     }
+    
+    // [Todas las funciones de filtros y búsqueda permanecen iguales]
     
     // Manejar búsqueda
     handleSearch(e) {
@@ -1707,7 +1713,7 @@ class VictorApp {
         
         tbody.innerHTML = vehicles.map(vehicle => `
             <tr>
-                <td><strong>${vehicle.placa}</strong></td>
+                <td><strong class="text-navy">${vehicle.placa}</strong></td>
                 <td>${vehicle.marcas?.nombre || '-'}</td>
                 <td>${vehicle.modelos?.nombre || '-'}</td>
                 <td>${vehicle.año}</td>
@@ -1814,8 +1820,8 @@ class VictorApp {
         
         tbody.innerHTML = brands.map(brand => `
             <tr>
-                <td>${brand.id}</td>
-                <td><strong>${brand.nombre}</strong></td>
+                <td><span class="badge bg-secondary">${brand.id}</span></td>
+                <td><strong class="text-navy">${brand.nombre}</strong></td>
                 <td>
                     <span class="vehicle-status status-${brand.estado}">
                         ${brand.estado}
@@ -1853,8 +1859,8 @@ class VictorApp {
         
         tbody.innerHTML = models.map(model => `
             <tr>
-                <td>${model.id}</td>
-                <td><strong>${model.nombre}</strong></td>
+                <td><span class="badge bg-secondary">${model.id}</span></td>
+                <td><strong class="text-navy">${model.nombre}</strong></td>
                 <td>${model.marcas?.nombre || '-'}</td>
                 <td>
                     <span class="vehicle-status status-${model.estado}">
@@ -1893,8 +1899,8 @@ class VictorApp {
         
         tbody.innerHTML = carrocerias.map(carroceria => `
             <tr>
-                <td>${carroceria.id}</td>
-                <td><strong>${carroceria.nombre}</strong></td>
+                <td><span class="badge bg-secondary">${carroceria.id}</span></td>
+                <td><strong class="text-navy">${carroceria.nombre}</strong></td>
                 <td>${carroceria.descripcion || '-'}</td>
                 <td>
                     <span class="vehicle-status status-${carroceria.estado}">
@@ -1914,52 +1920,6 @@ class VictorApp {
             </tr>
         `).join('');
     }
-    
-    // Mostrar/ocultar estado de carga
-    showLoading(show) {
-        const loadingState = document.getElementById('loadingState');
-        const contentArea = document.querySelector('.content-area');
-        
-        if (show) {
-            loadingState.style.display = 'block';
-            contentArea.style.opacity = '0.5';
-        } else {
-            loadingState.style.display = 'none';
-            contentArea.style.opacity = '1';
-        }
-    }
-    
-    // Mostrar notificación toast
-    showToast(message, type = 'info') {
-        const toastContainer = document.getElementById('toastContainer');
-        
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        
-        const icons = {
-            success: 'fas fa-check-circle',
-            error: 'fas fa-exclamation-circle',
-            warning: 'fas fa-exclamation-triangle',
-            info: 'fas fa-info-circle'
-        };
-        
-        toast.innerHTML = `
-            <i class="toast-icon ${icons[type]}"></i>
-            <span class="toast-message">${message}</span>
-            <button class="toast-close" onclick="this.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        
-        toastContainer.appendChild(toast);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (toast.parentElement) {
-                toast.remove();
-            }
-        }, 5000);
-    }
 }
 
 // Inicializar aplicación cuando el DOM esté listo
@@ -1967,10 +1927,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.app = new VictorApp();
 });
 
-// Manejar redimensionamiento de ventana
+// Manejar redimensionamiento de ventana para sidebar responsivo
 window.addEventListener('resize', function() {
-    const sidebar = document.getElementById('sidebar');
-    if (window.innerWidth > 768) {
-        sidebar.classList.remove('show');
-    }
+    // Bootstrap maneja la responsividad automáticamente
+    // No necesitamos código adicional para esto
 });
