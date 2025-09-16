@@ -54,6 +54,10 @@
                             <i class="fas fa-shapes nav-icon"></i>
                             <span class="nav-text">Carrocerías</span>
                         </a>
+                        <a class="nav-link submenu-link" href="#" data-submodule="estados">
+                            <i class="fas fa-flag nav-icon"></i>
+                            <span class="nav-text">Estados</span>
+                        </a>
                     </div>
                 </li>
             </ul>
@@ -266,6 +270,45 @@
                     </div>
                 </div>
 
+                <!-- Estados Table -->
+                <div class="card shadow-sm" id="estadosTable" style="display: none;">
+                    <div class="card-header bg-white border-bottom">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-flag text-primary me-2"></i>
+                                    Lista de Estados
+                                </h5>
+                            </div>
+                            <div class="col-auto">
+                                <select class="form-select form-select-sm" id="estadoFilterSelect">
+                                    <option value="">Todos los estados</option>
+                                    <option value="true">Activos</option>
+                                    <option value="false">Inactivos</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="fw-semibold">Nombre</th>
+                                        <th class="fw-semibold">Descripción</th>
+                                        <th class="fw-semibold">Color</th>
+                                        <th class="fw-semibold">Estado</th>
+                                        <th class="fw-semibold text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="estadosTableBody">
+                                    <!-- Estados will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Loading State -->
                 <div class="text-center py-5" id="loadingState" style="display: none;">
                     <div class="spinner-border text-primary" role="status">
@@ -322,6 +365,18 @@
                         Agregar Primera Carrocería
                     </button>
                 </div>
+
+                <div class="empty-state text-center py-5" id="emptyEstadosState" style="display: none;">
+                    <div class="mb-4">
+                        <i class="fas fa-flag display-1 text-muted opacity-50"></i>
+                    </div>
+                    <h4 class="text-muted">No hay estados registrados</h4>
+                    <p class="text-muted mb-4">Comienza agregando tu primer estado de vehículo</p>
+                    <button class="btn btn-primary" id="addFirstEstadoBtn">
+                        <i class="fas fa-plus me-2"></i>
+                        Agregar Primer Estado
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -359,6 +414,12 @@
                     <a class="nav-link" href="#" data-submodule="carrocerias" data-bs-dismiss="offcanvas">
                         <i class="fas fa-shapes nav-icon"></i>
                         <span class="nav-text">Carrocerías</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-submodule="estados" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-flag nav-icon"></i>
+                        <span class="nav-text">Estados</span>
                     </a>
                 </li>
             </ul>
@@ -593,6 +654,61 @@
                         <button type="submit" class="btn btn-primary" id="saveCarroceriaBtn">
                             <i class="fas fa-save me-2"></i>
                             Guardar Carrocería
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estado Modal -->
+    <div class="modal fade" id="estadoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="estadoModalTitle">
+                        <i class="fas fa-flag me-2"></i>
+                        Agregar Estado
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="estadoModalClose"></button>
+                </div>
+                <form id="estadoForm">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Nombre del Estado <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="estadoName" name="estadoName" required maxlength="50">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Descripción</label>
+                                <textarea class="form-control" id="estadoDescripcion" name="estadoDescripcion" rows="3" maxlength="500"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Color de Etiqueta</label>
+                                <select class="form-select" id="estadoColor" name="estadoColor">
+                                    <option value="primary">Azul (Primary)</option>
+                                    <option value="success">Verde (Success)</option>
+                                    <option value="warning">Amarillo (Warning)</option>
+                                    <option value="danger">Rojo (Danger)</option>
+                                    <option value="info">Azul Claro (Info)</option>
+                                    <option value="secondary">Gris (Secondary)</option>
+                                    <option value="dark">Negro (Dark)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Estado</label>
+                                <select class="form-select" id="estadoActivo" name="estadoActivo">
+                                    <option value="true">Activo</option>
+                                    <option value="false">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" id="cancelEstadoBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="saveEstadoBtn">
+                            <i class="fas fa-save me-2"></i>
+                            Guardar Estado
                         </button>
                     </div>
                 </form>

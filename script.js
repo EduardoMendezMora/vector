@@ -8,14 +8,17 @@ class VictorApp {
         this.currentBrand = null;
         this.currentModel = null;
         this.currentCarroceria = null;
+        this.currentEstado = null;
         this.vehicles = [];
         this.brands = [];
         this.models = [];
         this.carrocerias = [];
+        this.estados = [];
         this.isEditing = false;
         this.isEditingBrand = false;
         this.isEditingModel = false;
         this.isEditingCarroceria = false;
+        this.isEditingEstado = false;
         this.currentModule = 'vehiculos';
         this.currentSubModule = null;
         this.searchTimeout = null;
@@ -105,6 +108,7 @@ class VictorApp {
         document.getElementById('addFirstBrandBtn').addEventListener('click', () => this.showBrandModal());
         document.getElementById('addFirstModelBtn').addEventListener('click', () => this.showModelModal());
         document.getElementById('addFirstCarroceriaBtn').addEventListener('click', () => this.showCarroceriaModal());
+        document.getElementById('addFirstEstadoBtn').addEventListener('click', () => this.showEstadoModal());
         
         // Vehicle modal events
         this.setupModalEvents('vehicleModal', 'modalClose', 'cancelBtn', 'vehicleForm', 
@@ -122,6 +126,10 @@ class VictorApp {
         this.setupModalEvents('carroceriaModal', 'carroceriaModalClose', 'cancelCarroceriaBtn', 'carroceriaForm',
                              () => this.hideCarroceriaModal(), (e) => this.handleCarroceriaSubmit(e));
         
+        // Estado modal events
+        this.setupModalEvents('estadoModal', 'estadoModalClose', 'cancelEstadoBtn', 'estadoForm',
+                             () => this.hideEstadoModal(), (e) => this.handleEstadoSubmit(e));
+        
         // Delete modal events
         this.setupModalEvents('deleteModal', 'deleteModalClose', 'cancelDeleteBtn', null,
                              () => this.hideDeleteModal(), null);
@@ -134,6 +142,7 @@ class VictorApp {
         document.getElementById('modelBrandFilterSelect').addEventListener('change', (e) => this.handleModelBrandFilter(e));
         document.getElementById('modelFilterSelect').addEventListener('change', (e) => this.handleModelFilter(e));
         document.getElementById('carroceriaFilterSelect').addEventListener('change', (e) => this.handleCarroceriaFilter(e));
+        document.getElementById('estadoFilterSelect').addEventListener('change', (e) => this.handleEstadoFilter(e));
         
         // Vehicle form events
         document.getElementById('marca').addEventListener('change', (e) => this.handleMarcaChange(e));
@@ -255,6 +264,10 @@ class VictorApp {
                 pageTitle.textContent = 'Carrocerías de Vehículos';
                 this.showCarroceriasModule();
                 break;
+            case 'estados':
+                pageTitle.textContent = 'Estados de Vehículos';
+                this.showEstadosModule();
+                break;
         }
     }
     
@@ -311,10 +324,23 @@ class VictorApp {
         this.loadCarrocerias(true);
     }
     
+    // Mostrar módulo de estados
+    showEstadosModule() {
+        this.hideAllTables();
+        document.getElementById('estadosTable').style.display = 'block';
+        
+        // Actualizar botones
+        document.getElementById('addBtnText').textContent = 'Agregar Estado';
+        document.getElementById('addFirstBtnText').textContent = 'Agregar Primer Estado';
+        
+        // Cargar estados
+        this.loadEstados(true);
+    }
+    
     // Ocultar todas las tablas y estados vacíos
     hideAllTables() {
-        const tables = ['vehiclesTable', 'brandsTable', 'modelsTable', 'carroceriasTable'];
-        const emptyStates = ['emptyState', 'emptyBrandsState', 'emptyModelsState', 'emptyCarroceriasState'];
+        const tables = ['vehiclesTable', 'brandsTable', 'modelsTable', 'carroceriasTable', 'estadosTable'];
+        const emptyStates = ['emptyState', 'emptyBrandsState', 'emptyModelsState', 'emptyCarroceriasState', 'emptyEstadosState'];
         
         tables.forEach(tableId => {
             document.getElementById(tableId).style.display = 'none';
@@ -350,6 +376,10 @@ class VictorApp {
             // Cargar carrocerías
             await this.loadCarrocerias();
             console.log('Carrocerías cargadas:', this.carrocerias.length);
+            
+            // Cargar estados
+            await this.loadEstados();
+            console.log('Estados cargados:', this.estados.length);
             
             // Finalmente cargar vehículos
             await this.loadVehicles();
@@ -692,7 +722,86 @@ class VictorApp {
         `).join('');
     }
     
-    // Mostrar modal de agregar (vehículo, marca, modelo o carrocería)
+    // Cargar estados desde Supabase
+    async loadEstados(showLoading = false) {
+        try {
+            if (showLoading) this.showLoading(true);
+            
+            if (!supabase) {
+                throw new Error('Supabase no está inicializado');
+            }
+            
+            const { data, error } = await supabase
+                .from('estados')
+                .select('*')
+                .order('nombre', { ascending: true });
+            
+            if (error) {
+                throw error;
+            }
+            
+            this.estados = data || [];
+            console.log('Estados cargados desde Supabase:', this.estados.length);
+            
+            if (this.currentSubModule === 'estados') {
+                this.renderEstados();
+            }
+            
+        } catch (error) {
+            console.error('Error al cargar estados:', error);
+            this.showToast('Error al cargar estados: ' + error.message, 'error');
+            this.estados = [];
+            if (this.currentSubModule === 'estados') {
+                this.renderEstados();
+            }
+        } finally {
+            if (showLoading) this.showLoading(false);
+        }
+    }
+    
+    // Renderizar tabla de estados
+    renderEstados() {
+        const tbody = document.getElementById('estadosTableBody');
+        const emptyState = document.getElementById('emptyEstadosState');
+        const estadosTable = document.getElementById('estadosTable');
+        
+        if (this.estados.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.style.display = 'block';
+            estadosTable.style.display = 'none';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        estadosTable.style.display = 'block';
+        
+        tbody.innerHTML = this.estados.map(estado => `
+            <tr>
+                <td><strong class="text-navy">${estado.nombre}</strong></td>
+                <td>${estado.descripcion || '-'}</td>
+                <td>
+                    <span class="badge bg-${estado.color}">${estado.color}</span>
+                </td>
+                <td>
+                    <span class="badge ${estado.activo ? 'bg-success' : 'bg-secondary'}">
+                        ${estado.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="app.editEstado(${estado.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteEstado(${estado.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Mostrar modal de agregar (vehículo, marca, modelo, carrocería o estado)
     showAddModal() {
         if (this.currentSubModule === 'marcas') {
             this.showBrandModal();
@@ -700,6 +809,8 @@ class VictorApp {
             this.showModelModal();
         } else if (this.currentSubModule === 'carrocerias') {
             this.showCarroceriaModal();
+        } else if (this.currentSubModule === 'estados') {
+            this.showEstadoModal();
         } else {
             this.showVehicleModal();
         }
@@ -892,6 +1003,51 @@ class VictorApp {
         
         this.currentCarroceria = null;
         this.isEditingCarroceria = false;
+    }
+    
+    // Mostrar modal de estado usando Bootstrap Modal
+    showEstadoModal(estado = null) {
+        const modalElement = document.getElementById('estadoModal');
+        const modal = new bootstrap.Modal(modalElement);
+        const modalTitle = document.getElementById('estadoModalTitle');
+        const form = document.getElementById('estadoForm');
+        
+        this.currentEstado = estado;
+        this.isEditingEstado = !!estado;
+        
+        if (this.isEditingEstado) {
+            modalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Editar Estado';
+            this.populateEstadoForm(estado);
+        } else {
+            modalTitle.innerHTML = '<i class="fas fa-flag me-2"></i>Agregar Estado';
+            form.reset();
+        }
+        
+        modal.show();
+        
+        setTimeout(() => {
+            document.getElementById('estadoName').focus();
+        }, 100);
+    }
+    
+    // Ocultar modal de estado
+    hideEstadoModal() {
+        const modalElement = document.getElementById('estadoModal');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+        
+        this.currentEstado = null;
+        this.isEditingEstado = false;
+    }
+    
+    // Llenar formulario de estado
+    populateEstadoForm(estado) {
+        document.getElementById('estadoName').value = estado.nombre || '';
+        document.getElementById('estadoDescripcion').value = estado.descripcion || '';
+        document.getElementById('estadoColor').value = estado.color || 'primary';
+        document.getElementById('estadoActivo').value = estado.activo ? 'true' : 'false';
     }
     
     // Mostrar modal de confirmación de eliminación
@@ -1349,6 +1505,39 @@ class VictorApp {
         }
     }
     
+    // Manejar envío del formulario de estado
+    async handleEstadoSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const estadoData = Object.fromEntries(formData.entries());
+        
+        // Validar campos requeridos
+        if (!estadoData.estadoName) {
+            this.showToast('Por favor, ingresa el nombre del estado', 'error');
+            return;
+        }
+        
+        try {
+            this.showLoading(true);
+            
+            if (this.isEditingEstado) {
+                await this.updateEstado(estadoData);
+            } else {
+                await this.createEstado(estadoData);
+            }
+            
+            this.hideEstadoModal();
+            this.loadEstados(true);
+            
+        } catch (error) {
+            console.error('Error al guardar estado:', error);
+            this.showToast('Error al guardar estado: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
     // [Todas las demás funciones CRUD permanecen exactamente iguales]
     // Crear nuevo vehículo
     async createVehicle(vehicleData) {
@@ -1561,6 +1750,73 @@ class VictorApp {
         return data[0];
     }
     
+    // Crear nuevo estado
+    async createEstado(estadoData) {
+        if (!supabase) {
+            throw new Error('Supabase no está inicializado');
+        }
+        
+        const { data, error } = await supabase
+            .from('estados')
+            .insert([{
+                nombre: estadoData.estadoName,
+                descripcion: estadoData.estadoDescripcion || null,
+                color: estadoData.estadoColor || 'primary',
+                activo: estadoData.estadoActivo === 'true'
+            }])
+            .select();
+        
+        if (error) {
+            throw error;
+        }
+        
+        this.showToast('Estado creado exitosamente', 'success');
+        return data[0];
+    }
+    
+    // Actualizar estado existente
+    async updateEstado(estadoData) {
+        if (!supabase) {
+            throw new Error('Supabase no está inicializado');
+        }
+        
+        const { data, error } = await supabase
+            .from('estados')
+            .update({
+                nombre: estadoData.estadoName,
+                descripcion: estadoData.estadoDescripcion || null,
+                color: estadoData.estadoColor || 'primary',
+                activo: estadoData.estadoActivo === 'true',
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', this.currentEstado.id)
+            .select();
+        
+        if (error) {
+            throw error;
+        }
+        
+        this.showToast('Estado actualizado exitosamente', 'success');
+        return data[0];
+    }
+    
+    // Editar estado
+    editEstado(id) {
+        const estado = this.estados.find(e => e.id === id);
+        if (estado) {
+            this.showEstadoModal(estado);
+        }
+    }
+    
+    // Eliminar estado
+    deleteEstado(id) {
+        const estado = this.estados.find(e => e.id === id);
+        if (estado) {
+            this.currentEstado = estado;
+            this.showDeleteModal();
+        }
+    }
+    
     // Editar vehículo
     editVehicle(id) {
         const vehicle = this.vehicles.find(v => v.id === id);
@@ -1631,7 +1887,7 @@ class VictorApp {
     
     // Confirmar eliminación
     async confirmDelete() {
-        if (!this.currentVehicle && !this.currentBrand && !this.currentModel && !this.currentCarroceria) return;
+        if (!this.currentVehicle && !this.currentBrand && !this.currentModel && !this.currentCarroceria && !this.currentEstado) return;
         
         try {
             this.showLoading(true);
@@ -1695,11 +1951,25 @@ class VictorApp {
                 this.hideDeleteModal();
                 this.loadCarrocerias(true);
                 this.showToast('Carrocería eliminada exitosamente', 'success');
+                
+            } else if (this.currentEstado) {
+                const { error } = await supabase
+                    .from('estados')
+                    .delete()
+                    .eq('id', this.currentEstado.id);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                this.hideDeleteModal();
+                this.loadEstados(true);
+                this.showToast('Estado eliminado exitosamente', 'success');
             }
             
         } catch (error) {
             console.error('Error al eliminar:', error);
-            const itemType = this.currentVehicle ? 'vehículo' : (this.currentBrand ? 'marca' : (this.currentModel ? 'modelo' : 'carrocería'));
+            const itemType = this.currentVehicle ? 'vehículo' : (this.currentBrand ? 'marca' : (this.currentModel ? 'modelo' : (this.currentCarroceria ? 'carrocería' : 'estado')));
             this.showToast(`Error al eliminar ${itemType}: ` + error.message, 'error');
         } finally {
             this.showLoading(false);
@@ -1721,6 +1991,8 @@ class VictorApp {
                 this.filterModels('', '');
             } else if (this.currentSubModule === 'carrocerias') {
                 this.filterCarrocerias(query, '');
+            } else if (this.currentSubModule === 'estados') {
+                this.filterEstados(query, '');
             } else {
                 this.filterVehicles(query);
             }
@@ -1755,6 +2027,12 @@ class VictorApp {
     handleCarroceriaFilter(e) {
         const filter = e.target.value;
         this.filterCarrocerias('', filter);
+    }
+    
+    // Manejar filtro de estado en estados
+    handleEstadoFilter(e) {
+        const filter = e.target.value;
+        this.filterEstados('', filter);
     }
     
     // Filtrar vehículos
@@ -1898,6 +2176,30 @@ class VictorApp {
         this.renderFilteredCarrocerias(filteredCarrocerias);
     }
     
+    // Filtrar estados
+    filterEstados(searchQuery = '', statusFilter = '') {
+        let filteredEstados = [...this.estados];
+        
+        // Aplicar filtro de búsqueda
+        if (searchQuery) {
+            filteredEstados = filteredEstados.filter(estado => 
+                estado.nombre.toLowerCase().includes(searchQuery) ||
+                (estado.descripcion && estado.descripcion.toLowerCase().includes(searchQuery)) ||
+                estado.color.toLowerCase().includes(searchQuery)
+            );
+        }
+        
+        // Aplicar filtro de estado activo/inactivo
+        if (statusFilter !== '') {
+            const isActive = statusFilter === 'true';
+            filteredEstados = filteredEstados.filter(estado => 
+                estado.activo === isActive
+            );
+        }
+        
+        this.renderFilteredEstados(filteredEstados);
+    }
+    
     // Renderizar marcas filtradas
     renderFilteredBrands(brands) {
         const tbody = document.getElementById('brandsTableBody');
@@ -2009,6 +2311,48 @@ class VictorApp {
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="action-btn delete" onclick="app.deleteCarroceria(${carroceria.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Renderizar estados filtrados
+    renderFilteredEstados(estados) {
+        const tbody = document.getElementById('estadosTableBody');
+        const emptyState = document.getElementById('emptyEstadosState');
+        const estadosTable = document.getElementById('estadosTable');
+        
+        if (estados.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.style.display = 'block';
+            estadosTable.style.display = 'none';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        estadosTable.style.display = 'block';
+        
+        tbody.innerHTML = estados.map(estado => `
+            <tr>
+                <td><strong class="text-navy">${estado.nombre}</strong></td>
+                <td>${estado.descripcion || '-'}</td>
+                <td>
+                    <span class="badge bg-${estado.color}">${estado.color}</span>
+                </td>
+                <td>
+                    <span class="badge ${estado.activo ? 'bg-success' : 'bg-secondary'}">
+                        ${estado.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="app.editEstado(${estado.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteEstado(${estado.id})" title="Eliminar">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
