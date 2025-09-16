@@ -553,6 +553,7 @@ class VictorApp {
                 <td>${this.formatCombustible(vehicle.combustible)}</td>
                 <td class="text-end fw-semibold text-success">${this.formatColones(vehicle.leasing_semanal)}</td>
                 <td class="text-end fw-semibold text-info">${this.formatColones(vehicle.gastos_formalizacion)}</td>
+                <td class="text-end fw-semibold text-warning">${this.formatColones(vehicle.valor_adquisicion)}</td>
                 <td>
                     <span class="vehicle-status status-${vehicle.estado}">
                         ${vehicle.estado}
@@ -994,7 +995,7 @@ class VictorApp {
         const fields = [
             'placa', 'año', 
             'cilindrada', 'cilindros', 'combustible', 'transmision', 
-            'traccion', 'color', 'vin', 'leasing_semanal', 'gastos_formalizacion'
+            'traccion', 'color', 'vin', 'leasing_semanal', 'gastos_formalizacion', 'valor_adquisicion'
         ];
         
         // Llenar campos normales
@@ -1215,6 +1216,15 @@ class VictorApp {
             }
         }
         
+        // Validar valor de adquisición si se proporciona
+        if (vehicleData.valor_adquisicion) {
+            const valor = parseFloat(vehicleData.valor_adquisicion);
+            if (isNaN(valor) || valor < 0) {
+                this.showToast('El valor de adquisición debe ser un número positivo', 'error');
+                return;
+            }
+        }
+        
         try {
             this.showLoading(true);
             
@@ -1363,6 +1373,7 @@ class VictorApp {
                 vin: vehicleData.vin,
                 leasing_semanal: vehicleData.leasing_semanal ? parseFloat(vehicleData.leasing_semanal) : null,
                 gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
+                valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
                 estado: 'activo'
             }])
             .select();
@@ -1398,6 +1409,7 @@ class VictorApp {
                 vin: vehicleData.vin,
                 leasing_semanal: vehicleData.leasing_semanal ? parseFloat(vehicleData.leasing_semanal) : null,
                 gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
+                valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
                 updated_at: new Date().toISOString()
             })
             .eq('id', this.currentVehicle.id)
@@ -1760,7 +1772,8 @@ class VictorApp {
                 vehicle.vin?.toLowerCase().includes(searchQuery) ||
                 this.formatCombustible(vehicle.combustible).toLowerCase().includes(searchQuery) ||
                 this.formatColones(vehicle.leasing_semanal).toLowerCase().includes(searchQuery) ||
-                this.formatColones(vehicle.gastos_formalizacion).toLowerCase().includes(searchQuery)
+                this.formatColones(vehicle.gastos_formalizacion).toLowerCase().includes(searchQuery) ||
+                this.formatColones(vehicle.valor_adquisicion).toLowerCase().includes(searchQuery)
             );
         }
         
@@ -1802,6 +1815,7 @@ class VictorApp {
                 <td>${this.formatCombustible(vehicle.combustible)}</td>
                 <td class="text-end fw-semibold text-success">${this.formatColones(vehicle.leasing_semanal)}</td>
                 <td class="text-end fw-semibold text-info">${this.formatColones(vehicle.gastos_formalizacion)}</td>
+                <td class="text-end fw-semibold text-warning">${this.formatColones(vehicle.valor_adquisicion)}</td>
                 <td>
                     <span class="vehicle-status status-${vehicle.estado}">
                         ${vehicle.estado}
