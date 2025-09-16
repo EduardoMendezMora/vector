@@ -417,6 +417,11 @@ class VictorApp {
                     carrocerias (
                         id,
                         nombre
+                    ),
+                    estados (
+                        id,
+                        nombre,
+                        color
                     )
                 `)
                 .order('created_at', { ascending: false });
@@ -585,8 +590,8 @@ class VictorApp {
                 <td class="text-end fw-semibold text-info">${this.formatColones(vehicle.gastos_formalizacion)}</td>
                 <td class="text-end fw-semibold text-warning">${this.formatColones(vehicle.valor_adquisicion)}</td>
                 <td>
-                    <span class="vehicle-status status-${vehicle.estado}">
-                        ${vehicle.estado}
+                    <span class="badge bg-${vehicle.estados?.color || 'secondary'}">
+                        ${vehicle.estados?.nombre || 'Sin estado'}
                     </span>
                 </td>
                 <td>
@@ -842,6 +847,7 @@ class VictorApp {
         // Llenar selectores
         this.populateBrandsDropdown();
         this.populateCarroceriasDropdown();
+        this.populateEstadosDropdown();
         
         modal.show();
         
@@ -1171,6 +1177,16 @@ class VictorApp {
                 console.log('Carrocería establecida:', carroceriaSelect.value);
             }
         }
+        
+        // Llenar estado con ID
+        if (vehicle.estado_id) {
+            console.log('Estableciendo estado_id:', vehicle.estado_id);
+            const estadoSelect = document.getElementById('estado');
+            if (estadoSelect) {
+                estadoSelect.value = vehicle.estado_id;
+                console.log('Estado establecido:', estadoSelect.value);
+            }
+        }
     }
     
     // Llenar formulario de marca con datos
@@ -1320,6 +1336,33 @@ class VictorApp {
         });
         
         console.log('Opciones en selector de carrocería:', selector.options.length);
+        
+        if (currentValue) {
+            selector.value = currentValue;
+        }
+    }
+    
+    // Llenar selector de estados en el modal de vehículo
+    populateEstadosDropdown() {
+        const selector = document.getElementById('estado');
+        const currentValue = selector.value;
+        
+        console.log('Llenando selector de estados. Total estados:', this.estados.length);
+        console.log('Estados disponibles:', this.estados);
+        
+        selector.innerHTML = '<option value="">Seleccionar estado...</option>';
+        
+        this.estados.forEach(estado => {
+            if (estado.activo) {
+                const option = document.createElement('option');
+                option.value = estado.id;
+                option.textContent = estado.nombre;
+                selector.appendChild(option);
+                console.log('Agregado estado:', estado.nombre, 'ID:', estado.id);
+            }
+        });
+        
+        console.log('Opciones en selector de estado:', selector.options.length);
         
         if (currentValue) {
             selector.value = currentValue;
@@ -1563,6 +1606,7 @@ class VictorApp {
                 leasing_semanal: vehicleData.leasing_semanal ? parseFloat(vehicleData.leasing_semanal) : null,
                 gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
                 valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
+                estado_id: vehicleData.estado ? parseInt(vehicleData.estado) : null,
                 estado: 'activo'
             }])
             .select();
@@ -1599,6 +1643,7 @@ class VictorApp {
                 leasing_semanal: vehicleData.leasing_semanal ? parseFloat(vehicleData.leasing_semanal) : null,
                 gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
                 valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
+                estado_id: vehicleData.estado ? parseInt(vehicleData.estado) : null,
                 updated_at: new Date().toISOString()
             })
             .eq('id', this.currentVehicle.id)
@@ -2051,7 +2096,8 @@ class VictorApp {
                 this.formatCombustible(vehicle.combustible).toLowerCase().includes(searchQuery) ||
                 this.formatColones(vehicle.leasing_semanal).toLowerCase().includes(searchQuery) ||
                 this.formatColones(vehicle.gastos_formalizacion).toLowerCase().includes(searchQuery) ||
-                this.formatColones(vehicle.valor_adquisicion).toLowerCase().includes(searchQuery)
+                this.formatColones(vehicle.valor_adquisicion).toLowerCase().includes(searchQuery) ||
+                vehicle.estados?.nombre?.toLowerCase().includes(searchQuery)
             );
         }
         
@@ -2095,8 +2141,8 @@ class VictorApp {
                 <td class="text-end fw-semibold text-info">${this.formatColones(vehicle.gastos_formalizacion)}</td>
                 <td class="text-end fw-semibold text-warning">${this.formatColones(vehicle.valor_adquisicion)}</td>
                 <td>
-                    <span class="vehicle-status status-${vehicle.estado}">
-                        ${vehicle.estado}
+                    <span class="badge bg-${vehicle.estados?.color || 'secondary'}">
+                        ${vehicle.estados?.nombre || 'Sin estado'}
                     </span>
                 </td>
                 <td>
