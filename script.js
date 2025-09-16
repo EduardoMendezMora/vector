@@ -1318,6 +1318,10 @@ class VictorApp {
     // Llenar selector de carrocerías en el modal de vehículo
     populateCarroceriasDropdown() {
         const selector = document.getElementById('carroceria');
+        if (!selector) {
+            console.error('Elemento con ID "carroceria" no encontrado');
+            return;
+        }
         const currentValue = selector.value;
         
         console.log('Llenando selector de carrocerías. Total carrocerías:', this.carrocerias.length);
@@ -1345,6 +1349,10 @@ class VictorApp {
     // Llenar selector de estados en el modal de vehículo
     populateEstadosDropdown() {
         const selector = document.getElementById('estado');
+        if (!selector) {
+            console.error('Elemento con ID "estado" no encontrado');
+            return;
+        }
         const currentValue = selector.value;
         
         console.log('Llenando selector de estados. Total estados:', this.estados.length);
