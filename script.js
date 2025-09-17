@@ -98,7 +98,9 @@ class VictorApp {
         await this.initializeSupabase();
         // Solo cargar vehículos si Supabase se inicializó correctamente
         if (supabase) {
-            this.loadVehicles();
+            this.debugLog('init:loading owners and vehicles');
+            await this.loadOwners();
+            await this.loadVehicles();
         }
     }
     
