@@ -23,8 +23,20 @@ class VictorApp {
         this.currentModule = 'vehiculos';
         this.currentSubModule = null;
         this.searchTimeout = null;
+        // Debug flag
+        this.debug = true;
         
         this.init();
+    }
+
+    debugLog(label, payload = null) {
+        if (!this.debug) return;
+        const time = new Date().toISOString();
+        if (payload !== null) {
+            console.log(`[DEBUG ${time}] ${label}:`, payload);
+        } else {
+            console.log(`[DEBUG ${time}] ${label}`);
+        }
     }
 
     // Función para formatear valores de combustible
@@ -422,6 +434,7 @@ class VictorApp {
     async loadVehicles() {
         try {
             this.showLoading(true);
+            this.debugLog('loadVehicles:start');
             
             if (!supabase) {
                 throw new Error('Supabase no está inicializado');
@@ -452,10 +465,12 @@ class VictorApp {
                 .order('created_at', { ascending: false });
             
             if (error) {
+                this.debugLog('loadVehicles:error', error);
                 throw error;
             }
             
             this.vehicles = data || [];
+            this.debugLog('loadVehicles:success:count', this.vehicles.length);
             this.renderVehicles();
             
         } catch (error) {
@@ -464,6 +479,7 @@ class VictorApp {
             this.vehicles = [];
             this.renderVehicles();
         } finally {
+            this.debugLog('loadVehicles:end');
             this.showLoading(false);
         }
     }
@@ -591,6 +607,7 @@ class VictorApp {
         const tbody = document.getElementById('vehiclesTableBody');
         const emptyState = document.getElementById('emptyState');
         const vehiclesTable = document.getElementById('vehiclesTable');
+        this.debugLog('renderVehicles:start', { count: this.vehicles.length });
         
         if (this.vehicles.length === 0) {
             tbody.innerHTML = '';
@@ -629,6 +646,7 @@ class VictorApp {
                 </td>
             </tr>
         `).join('');
+        this.debugLog('renderVehicles:end');
     }
     
     // Renderizar tabla de marcas
@@ -1098,11 +1116,16 @@ class VictorApp {
 
     async linkVehicleOwner(vehicleId, ownerId) {
         const parsedOwnerId = ownerId ? String(ownerId) : null;
+        this.debugLog('linkVehicleOwner:payload', { vehicleId, ownerId, parsedOwnerId });
         const { error } = await supabase
             .from('vehiculos')
             .update({ propietario_id: parsedOwnerId, updated_at: new Date().toISOString() })
             .eq('id', vehicleId);
-        if (error) throw error;
+        if (error) {
+            this.debugLog('linkVehicleOwner:error', error);
+            throw error;
+        }
+        this.debugLog('linkVehicleOwner:success');
     }
 
     editOwner(id) {
@@ -1135,6 +1158,7 @@ class VictorApp {
         // Incluir solo activos en la lista, pero si el propietario actual está inactivo, mantenerlo visible
         const currentOwnerId = this.currentVehicle?.propietario_id ? String(this.currentVehicle.propietario_id) : null;
         const list = this.owners.filter(o => o.activo || String(o.id) === currentOwnerId);
+        this.debugLog('populateOwnersDropdown:list', { currentOwnerId, totalOwners: this.owners?.length || 0, rendered: list.length });
         list.forEach(o => {
             const option = document.createElement('option');
             option.value = o.id;
@@ -1277,6 +1301,7 @@ class VictorApp {
         const modal = new bootstrap.Modal(modalElement);
         const modalTitle = document.getElementById('modalTitle');
         const form = document.getElementById('vehicleForm');
+        this.debugLog('showVehicleModal', { vehicle });
         
         this.currentVehicle = vehicle;
         this.isEditing = !!vehicle;
@@ -1334,6 +1359,7 @@ class VictorApp {
                     const ownerSelect = document.getElementById('propietario');
                     if (ownerSelect) {
                         ownerSelect.value = vehicle.propietario_id;
+                        this.debugLog('showVehicleModal:ownerPreselect', { propietario_id: vehicle.propietario_id, ownerSelectValue: ownerSelect.value });
                     }
                 }
             }, 120);
@@ -1842,6 +1868,10 @@ class VictorApp {
         if (!supabase) {
             throw new Error('Supabase no está inicializado');
         }
+        this.debugLog('createVehicle:payload', {
+            ...vehicleData,
+            propietario_id: vehicleData.propietario ? String(vehicleData.propietario) : null
+        });
         const { data, error } = await supabase
             .from('vehiculos')
             .insert([{
@@ -1866,9 +1896,11 @@ class VictorApp {
             }])
             .select();
         if (error) {
+            this.debugLog('createVehicle:error', error);
             throw error;
         }
         this.showToast('Vehículo creado exitosamente', 'success');
+        this.debugLog('createVehicle:success', data?.[0] || null);
         return data[0];
     }
 
@@ -1876,6 +1908,11 @@ class VictorApp {
         if (!supabase) {
             throw new Error('Supabase no está inicializado');
         }
+        this.debugLog('updateVehicle:payload', {
+            id: this.currentVehicle?.id || null,
+            ...vehicleData,
+            propietario_id: vehicleData.propietario ? String(vehicleData.propietario) : null
+        });
         const { data, error } = await supabase
             .from('vehiculos')
             .update({
@@ -1901,9 +1938,11 @@ class VictorApp {
             .eq('id', this.currentVehicle.id)
             .select();
         if (error) {
+            this.debugLog('updateVehicle:error', error);
             throw error;
         }
         this.showToast('Vehículo actualizado exitosamente', 'success');
+        this.debugLog('updateVehicle:success', data?.[0] || null);
         return data[0];
     }
     
@@ -1912,9 +1951,11 @@ class VictorApp {
     // Manejar envío del formulario
     async handleVehicleSubmit(e) {
         e.preventDefault();
+        this.debugLog('handleVehicleSubmit:start');
         
         const formData = new FormData(e.target);
         const vehicleData = Object.fromEntries(formData.entries());
+        this.debugLog('handleVehicleSubmit:formData', vehicleData);
         
         // Validar campos requeridos
         if (!vehicleData.placa || !vehicleData.marca || !vehicleData.modelo || !vehicleData.año) {
@@ -1964,20 +2005,25 @@ class VictorApp {
         
         try {
             this.showLoading(true);
+            this.debugLog('handleVehicleSubmit:saving', { isEditing: this.isEditing, currentVehicleId: this.currentVehicle?.id || null });
             
             if (this.isEditing) {
-                await this.updateVehicle(vehicleData);
+                const updated = await this.updateVehicle(vehicleData);
+                this.debugLog('handleVehicleSubmit:update:result', updated);
             } else {
-                await this.createVehicle(vehicleData);
+                const created = await this.createVehicle(vehicleData);
+                this.debugLog('handleVehicleSubmit:create:result', created);
             }
             
             this.hideVehicleModal();
-            this.loadVehicles();
+            await this.loadVehicles();
             
         } catch (error) {
             console.error('Error al guardar vehículo:', error);
+            this.debugLog('handleVehicleSubmit:error', { message: error.message, error });
             this.showToast('Error al guardar vehículo: ' + error.message, 'error');
         } finally {
+            this.debugLog('handleVehicleSubmit:end');
             this.showLoading(false);
         }
     }
