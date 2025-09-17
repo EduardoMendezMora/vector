@@ -442,7 +442,7 @@ class VictorApp {
                         nombre,
                         color
                     ),
-                    propietarios:propietarios!vehiculos_propietario_id_fkey (
+                    propietarios:propietarios!fk_vehiculos_propietario (
                         id,
                         tipo,
                         nombre,
@@ -609,7 +609,7 @@ class VictorApp {
                 <td>${vehicle.modelos?.nombre || '-'}</td>
                 <td>${vehicle.año}</td>
                 <td>${vehicle.carrocerias?.nombre || '-'}</td>
-                <td>${this.formatOwnerName(vehicle.propietarios)}</td>
+                <td>${this.formatOwnerName(vehicle.propietario_id)}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${this.formatCombustible(vehicle.combustible)}</td>
                 <td>
@@ -818,9 +818,16 @@ class VictorApp {
 
     formatOwnerName(owner) {
         if (!owner) return '-';
-        if (Array.isArray(owner)) owner = owner[0];
-        if (!owner) return '-';
-        return owner.tipo === 'juridico' ? (owner.razon_social || '-') : (owner.nombre || '-');
+        // owner puede ser un objeto resolvido o un ID; aquí siempre resolvemos por ID
+        if (typeof owner === 'object' && owner !== null) {
+            const resolved = owner.tipo === 'juridico' ? (owner.razon_social || '-') : (owner.nombre || '-');
+            return resolved || '-';
+        }
+        const id = parseInt(owner);
+        if (!id || !Array.isArray(this.owners)) return '-';
+        const found = this.owners.find(o => o.id === id);
+        if (!found) return '-';
+        return found.tipo === 'juridico' ? (found.razon_social || '-') : (found.nombre || '-');
     }
 
     showOwnersModule() {
@@ -2525,7 +2532,7 @@ class VictorApp {
                 <td>${vehicle.modelos?.nombre || '-'}</td>
                 <td>${vehicle.año}</td>
                 <td>${vehicle.carrocerias?.nombre || '-'}</td>
-                <td>${this.formatOwnerName(vehicle.propietarios)}</td>
+                <td>${this.formatOwnerName(vehicle.propietario_id)}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${this.formatCombustible(vehicle.combustible)}</td>
                 <td>
