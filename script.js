@@ -155,7 +155,7 @@ class VictorApp {
         // Vehicle form events
         document.getElementById('marca').addEventListener('change', (e) => this.handleMarcaChange(e));
         const openOwnerModalQuick = document.getElementById('openOwnerModalQuick');
-        if (openOwnerModalQuick) openOwnerModalQuick.addEventListener('click', () => this.showOwnerModal());
+        if (openOwnerModalQuick) openOwnerModalQuick.addEventListener('click', () => { this.isQuickOwner = true; this.showOwnerModal(); });
         const openBrandModalQuick = document.getElementById('openBrandModalQuick');
         if (openBrandModalQuick) openBrandModalQuick.addEventListener('click', () => this.quickAddBrand());
         const openModelModalQuick = document.getElementById('openModelModalQuick');
@@ -953,7 +953,10 @@ class VictorApp {
 
         // Cambiar visibilidad de campos según tipo
         const tipoSelect = document.getElementById('ownerTipo');
-        tipoSelect.addEventListener('change', (e) => this.updateOwnerFormVisibility(e.target.value));
+        if (tipoSelect) {
+            // Evitar múltiples listeners
+            tipoSelect.onchange = (e) => this.updateOwnerFormVisibility(e.target.value);
+        }
 
         modal.show();
         setTimeout(() => document.getElementById('ownerNombre')?.focus(), 100);
@@ -978,7 +981,8 @@ class VictorApp {
     // CRUD propietarios
     async handleOwnerSubmit(e) {
         e.preventDefault();
-        const formData = new FormData(e.target);
+        const form = e.target;
+        const formData = new FormData(form);
         const o = Object.fromEntries(formData.entries());
         const tipo = o.ownerTipo;
         if (tipo === 'individual') {
@@ -1001,14 +1005,23 @@ class VictorApp {
                 await this.createOwner(o);
             }
             this.hideOwnerModal();
-            this.loadOwners(true);
-            // Actualizar dropdown de propietarios del vehículo si existe
+            await this.loadOwners(true);
+            // Si venimos del modal de vehículo y hay un propietario recién creado, seleccionarlo
+            if (!this.isEditingOwner) {
+                const created = await this.findRecentlyCreatedOwner(o);
+                if (created) {
+                    const selector = document.getElementById('propietario');
+                    if (selector) selector.value = created.id;
+                }
+            }
             this.populateOwnersDropdown();
         } catch (error) {
             console.error('Error al guardar propietario:', error);
-            this.showToast('Error al guardar propietario: ' + error.message, 'error');
+            const msg = (error && error.message) ? error.message : 'Error al guardar propietario';
+            this.showToast(msg, 'error');
         } finally {
             this.showLoading(false);
+            this.isQuickOwner = false;
         }
     }
 
@@ -1021,7 +1034,7 @@ class VictorApp {
     }
 
     async createOwner(o) {
-        const { error } = await supabase.from('propietarios').insert([{
+        const { data, error } = await supabase.from('propietarios').insert([{
             tipo: o.ownerTipo,
             nombre: o.ownerTipo === 'individual' ? o.ownerNombre : null,
             identificacion: o.ownerTipo === 'individual' ? o.ownerIdentificacion : null,
@@ -1030,9 +1043,10 @@ class VictorApp {
             apoderado_nombre: o.ownerTipo === 'juridico' ? o.ownerApoderadoNombre : null,
             apoderado_identificacion: o.ownerTipo === 'juridico' ? o.ownerApoderadoIdentificacion : null,
             activo: true
-        }]);
+        }]).select();
         if (error) throw error;
         this.showToast('Propietario creado', 'success');
+        return data?.[0] || null;
     }
 
     async updateOwner(o) {
@@ -1048,6 +1062,34 @@ class VictorApp {
         }).eq('id', this.currentOwner.id);
         if (error) throw error;
         this.showToast('Propietario actualizado', 'success');
+    }
+
+    async findRecentlyCreatedOwner(o) {
+        try {
+            if (o.ownerTipo === 'individual' && o.ownerIdentificacion) {
+                const { data } = await supabase
+                    .from('propietarios')
+                    .select('id')
+                    .eq('tipo', 'individual')
+                    .eq('identificacion', o.ownerIdentificacion)
+                    .limit(1)
+                    .maybeSingle();
+                return data || null;
+            }
+            if (o.ownerTipo === 'juridico' && o.ownerIdentificacionJuridica) {
+                const { data } = await supabase
+                    .from('propietarios')
+                    .select('id')
+                    .eq('tipo', 'juridico')
+                    .eq('identificacion_juridica', o.ownerIdentificacionJuridica)
+                    .limit(1)
+                    .maybeSingle();
+                return data || null;
+            }
+            return null;
+        } catch {
+            return null;
+        }
     }
 
     editOwner(id) {
