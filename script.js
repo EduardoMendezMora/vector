@@ -823,9 +823,9 @@ class VictorApp {
             const resolved = owner.tipo === 'juridico' ? (owner.razon_social || '-') : (owner.nombre || '-');
             return resolved || '-';
         }
-        const id = parseInt(owner);
-        if (!id || !Array.isArray(this.owners)) return '-';
-        const found = this.owners.find(o => o.id === id);
+        const idStr = String(owner);
+        if (!Array.isArray(this.owners)) return '-';
+        const found = this.owners.find(o => String(o.id) === idStr);
         if (!found) return '-';
         return found.tipo === 'juridico' ? (found.razon_social || '-') : (found.nombre || '-');
     }
@@ -1097,7 +1097,7 @@ class VictorApp {
     }
 
     async linkVehicleOwner(vehicleId, ownerId) {
-        const parsedOwnerId = ownerId ? parseInt(ownerId) : null;
+        const parsedOwnerId = ownerId ? String(ownerId) : null;
         const { error } = await supabase
             .from('vehiculos')
             .update({ propietario_id: parsedOwnerId, updated_at: new Date().toISOString() })
@@ -1133,13 +1133,13 @@ class VictorApp {
         const currentValue = selector.value;
         selector.innerHTML = '<option value="">Seleccionar propietario...</option>';
         // Incluir solo activos en la lista, pero si el propietario actual está inactivo, mantenerlo visible
-        const currentOwnerId = this.currentVehicle?.propietario_id;
-        const list = this.owners.filter(o => o.activo || o.id === currentOwnerId);
+        const currentOwnerId = this.currentVehicle?.propietario_id ? String(this.currentVehicle.propietario_id) : null;
+        const list = this.owners.filter(o => o.activo || String(o.id) === currentOwnerId);
         list.forEach(o => {
             const option = document.createElement('option');
             option.value = o.id;
             option.textContent = (o.tipo === 'juridico' ? (o.razon_social || '-') : (o.nombre || '-'));
-            if (o.id === currentOwnerId && o.activo === false) {
+            if (String(o.id) === currentOwnerId && o.activo === false) {
                 option.textContent += ' (inactivo)';
             }
             selector.appendChild(option);
@@ -1861,7 +1861,7 @@ class VictorApp {
                 gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
                 valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
                 estado_id: vehicleData.estado ? parseInt(vehicleData.estado) : null,
-                propietario_id: vehicleData.propietario ? parseInt(vehicleData.propietario) : null,
+                propietario_id: vehicleData.propietario ? String(vehicleData.propietario) : null,
                 estado: 'activo'
             }])
             .select();
@@ -1895,7 +1895,7 @@ class VictorApp {
                 gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
                 valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
                 estado_id: vehicleData.estado ? parseInt(vehicleData.estado) : null,
-                propietario_id: vehicleData.propietario ? parseInt(vehicleData.propietario) : null,
+                propietario_id: vehicleData.propietario ? String(vehicleData.propietario) : null,
                 updated_at: new Date().toISOString()
             })
             .eq('id', this.currentVehicle.id)
