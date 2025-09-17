@@ -462,6 +462,12 @@ class VictorApp {
                         id,
                         nombre,
                         color
+                    ),
+                    propietarios:propietarios!fk_vehiculos_propietario (
+                        id,
+                        tipo,
+                        nombre,
+                        razon_social
                     )
                 `)
                 .order('created_at', { ascending: false });
@@ -1321,7 +1327,8 @@ class VictorApp {
             await this.loadInitialData();
         }
         
-        // Llenar selectores
+        // Llenar selectores (asegurar owners antes)
+        await this.loadOwners();
         this.populateBrandsDropdown();
         this.populateCarroceriasDropdown();
         this.populateEstadosDropdown();
@@ -2019,6 +2026,15 @@ class VictorApp {
             if (this.isEditing) {
                 const updated = await this.updateVehicle(vehicleData);
                 this.debugLog('handleVehicleSubmit:update:result', updated);
+                // Refrescar en memoria inmediatamente para reflejar propietario en la lista
+                if (updated && updated.id) {
+                    const idx = this.vehicles.findIndex(v => v.id === updated.id);
+                    if (idx !== -1) {
+                        this.vehicles[idx] = { ...this.vehicles[idx], ...updated };
+                        this.renderVehicles();
+                        this.debugLog('handleVehicleSubmit:update:appliedToLocalState', this.vehicles[idx]);
+                    }
+                }
             } else {
                 const created = await this.createVehicle(vehicleData);
                 this.debugLog('handleVehicleSubmit:create:result', created);
