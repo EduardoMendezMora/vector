@@ -1097,9 +1097,10 @@ class VictorApp {
     }
 
     async linkVehicleOwner(vehicleId, ownerId) {
+        const parsedOwnerId = ownerId ? parseInt(ownerId) : null;
         const { error } = await supabase
             .from('vehiculos')
-            .update({ propietario_id: ownerId, updated_at: new Date().toISOString() })
+            .update({ propietario_id: parsedOwnerId, updated_at: new Date().toISOString() })
             .eq('id', vehicleId);
         if (error) throw error;
     }
