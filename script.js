@@ -14,6 +14,7 @@ class VictorApp {
         this.models = [];
         this.carrocerias = [];
         this.estados = [];
+        this.owners = [];
         this.isEditing = false;
         this.isEditingBrand = false;
         this.isEditingModel = false;
@@ -129,6 +130,9 @@ class VictorApp {
         // Estado modal events
         this.setupModalEvents('estadoModal', 'estadoModalClose', 'cancelEstadoBtn', 'estadoForm',
                              () => this.hideEstadoModal(), (e) => this.handleEstadoSubmit(e));
+        // Owner modal events
+        this.setupModalEvents('ownerModal', 'ownerModalClose', 'cancelOwnerBtn', 'ownerForm',
+                             () => this.hideOwnerModal(), (e) => this.handleOwnerSubmit(e));
         
         // Delete modal events
         this.setupModalEvents('deleteModal', 'deleteModalClose', 'cancelDeleteBtn', null,
@@ -143,9 +147,15 @@ class VictorApp {
         document.getElementById('modelFilterSelect').addEventListener('change', (e) => this.handleModelFilter(e));
         document.getElementById('carroceriaFilterSelect').addEventListener('change', (e) => this.handleCarroceriaFilter(e));
         document.getElementById('estadoFilterSelect').addEventListener('change', (e) => this.handleEstadoFilter(e));
+        const ownerTypeFilter = document.getElementById('ownerTypeFilterSelect');
+        if (ownerTypeFilter) ownerTypeFilter.addEventListener('change', (e) => this.handleOwnerTypeFilter(e));
+        const ownerActiveFilter = document.getElementById('ownerActiveFilterSelect');
+        if (ownerActiveFilter) ownerActiveFilter.addEventListener('change', (e) => this.handleOwnerActiveFilter(e));
         
         // Vehicle form events
         document.getElementById('marca').addEventListener('change', (e) => this.handleMarcaChange(e));
+        const openOwnerModalQuick = document.getElementById('openOwnerModalQuick');
+        if (openOwnerModalQuick) openOwnerModalQuick.addEventListener('click', () => this.showOwnerModal());
     }
     
     // Configurar eventos de modal de forma genérica
@@ -268,6 +278,10 @@ class VictorApp {
                 pageTitle.textContent = 'Estados de Vehículos';
                 this.showEstadosModule();
                 break;
+            case 'propietarios':
+                pageTitle.textContent = 'Propietarios';
+                this.showOwnersModule();
+                break;
         }
     }
     
@@ -340,6 +354,7 @@ class VictorApp {
     // Ocultar todas las tablas y estados vacíos
     hideAllTables() {
         const tables = ['vehiclesTable', 'brandsTable', 'modelsTable', 'carroceriasTable', 'estadosTable'];
+        tables.push('ownersTable');
         const emptyStates = ['emptyState', 'emptyBrandsState', 'emptyModelsState', 'emptyCarroceriasState', 'emptyEstadosState'];
         
         tables.forEach(tableId => {
@@ -380,6 +395,10 @@ class VictorApp {
             // Cargar estados
             await this.loadEstados();
             console.log('Estados cargados:', this.estados.length);
+
+            // Cargar propietarios
+            await this.loadOwners();
+            console.log('Propietarios cargados:', this.owners.length);
             
             // Finalmente cargar vehículos
             await this.loadVehicles();
@@ -422,6 +441,12 @@ class VictorApp {
                         id,
                         nombre,
                         color
+                    ),
+                    propietarios:propietarios!vehiculos_propietario_id_fkey (
+                        id,
+                        tipo,
+                        nombre,
+                        razon_social
                     )
                 `)
                 .order('created_at', { ascending: false });
@@ -584,6 +609,7 @@ class VictorApp {
                 <td>${vehicle.modelos?.nombre || '-'}</td>
                 <td>${vehicle.año}</td>
                 <td>${vehicle.carrocerias?.nombre || '-'}</td>
+                <td>${this.formatOwnerName(vehicle.propietarios)}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${this.formatCombustible(vehicle.combustible)}</td>
                 <td>
@@ -760,6 +786,292 @@ class VictorApp {
             if (showLoading) this.showLoading(false);
         }
     }
+
+    // ====== PROPIETARIOS ======
+    async loadOwners(showLoading = false) {
+        try {
+            if (showLoading) this.showLoading(true);
+            if (!supabase) throw new Error('Supabase no está inicializado');
+
+            const { data, error } = await supabase
+                .from('propietarios')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            this.owners = data || [];
+
+            if (this.currentSubModule === 'propietarios') {
+                this.renderOwners();
+            }
+        } catch (error) {
+            console.error('Error al cargar propietarios:', error);
+            this.showToast('Error al cargar propietarios: ' + error.message, 'error');
+            this.owners = [];
+            if (this.currentSubModule === 'propietarios') {
+                this.renderOwners();
+            }
+        } finally {
+            if (showLoading) this.showLoading(false);
+        }
+    }
+
+    formatOwnerName(owner) {
+        if (!owner) return '-';
+        if (Array.isArray(owner)) owner = owner[0];
+        if (!owner) return '-';
+        return owner.tipo === 'juridico' ? (owner.razon_social || '-') : (owner.nombre || '-');
+    }
+
+    showOwnersModule() {
+        this.hideAllTables();
+        document.getElementById('ownersTable').style.display = 'block';
+        document.getElementById('addBtnText').textContent = 'Agregar Propietario';
+        document.getElementById('addFirstBtnText').textContent = 'Agregar Primer Propietario';
+        this.loadOwners(true);
+    }
+
+    renderOwners() {
+        const tbody = document.getElementById('ownersTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = this.owners.map(o => `
+            <tr>
+                <td><span class="badge bg-secondary text-uppercase">${o.tipo}</span></td>
+                <td>${o.tipo === 'juridico' ? (o.razon_social || '-') : (o.nombre || '-')}</td>
+                <td>${o.tipo === 'juridico' ? (o.identificacion_juridica || '-') : (o.identificacion || '-')}</td>
+                <td>${o.tipo === 'juridico' ? `${o.apoderado_nombre || '-'} (${o.apoderado_identificacion || '-'})` : '-'}</td>
+                <td>
+                    <button class="btn btn-sm ${o.activo ? 'btn-success' : 'btn-secondary'}" onclick="app.toggleOwnerActive(${o.id}, ${o.activo ? 'false' : 'true'})">
+                        ${o.activo ? '<i class=\'fas fa-toggle-on\'></i> Activo' : '<i class=\'fas fa-toggle-off\'></i> Inactivo'}
+                    </button>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="app.editOwner(${o.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteOwner(${o.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async toggleOwnerActive(id, active) {
+        try {
+            this.showLoading(true);
+            const { error } = await supabase
+                .from('propietarios')
+                .update({ activo: active === true || active === 'true' })
+                .eq('id', id);
+            if (error) throw error;
+            this.showToast('Estado actualizado', 'success');
+            await this.loadOwners(true);
+            this.populateOwnersDropdown();
+        } catch (error) {
+            const msg = (error && error.message) ? error.message : 'No se pudo actualizar el estado';
+            this.showToast(msg, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    handleOwnerTypeFilter(e) {
+        const type = e.target.value;
+        const active = document.getElementById('ownerActiveFilterSelect').value;
+        this.filterOwners(type, active);
+    }
+
+    handleOwnerActiveFilter(e) {
+        const active = e.target.value;
+        const type = document.getElementById('ownerTypeFilterSelect').value;
+        this.filterOwners(type, active);
+    }
+
+    filterOwners(typeFilter = '', activeFilter = '') {
+        let list = [...this.owners];
+        if (typeFilter) list = list.filter(o => o.tipo === typeFilter);
+        if (activeFilter !== '') list = list.filter(o => o.activo === (activeFilter === 'true'));
+        const tbody = document.getElementById('ownersTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = list.map(o => `
+            <tr>
+                <td><span class="badge bg-secondary text-uppercase">${o.tipo}</span></td>
+                <td>${o.tipo === 'juridico' ? (o.razon_social || '-') : (o.nombre || '-')}</td>
+                <td>${o.tipo === 'juridico' ? (o.identificacion_juridica || '-') : (o.identificacion || '-')}</td>
+                <td>${o.tipo === 'juridico' ? `${o.apoderado_nombre || '-'} (${o.apoderado_identificacion || '-'})` : '-'}</td>
+                <td>
+                    <span class="badge ${o.activo ? 'bg-success' : 'bg-secondary'}">${o.activo ? 'Activo' : 'Inactivo'}</span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="app.editOwner(${o.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="app.deleteOwner(${o.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Modal Propietario
+    showOwnerModal(owner = null) {
+        const modalElement = document.getElementById('ownerModal');
+        const modal = new bootstrap.Modal(modalElement);
+        const modalTitle = document.getElementById('ownerModalTitle');
+        const form = document.getElementById('ownerForm');
+
+        this.currentOwner = owner;
+        this.isEditingOwner = !!owner;
+
+        if (this.isEditingOwner) {
+            modalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Editar Propietario';
+            this.populateOwnerForm(owner);
+        } else {
+            modalTitle.innerHTML = '<i class="fas fa-user-tie me-2"></i>Agregar Propietario';
+            form.reset();
+            this.updateOwnerFormVisibility('individual');
+        }
+
+        // Cambiar visibilidad de campos según tipo
+        const tipoSelect = document.getElementById('ownerTipo');
+        tipoSelect.addEventListener('change', (e) => this.updateOwnerFormVisibility(e.target.value));
+
+        modal.show();
+        setTimeout(() => document.getElementById('ownerNombre')?.focus(), 100);
+    }
+
+    updateOwnerFormVisibility(tipo) {
+        document.querySelectorAll('.owner-individual-fields').forEach(el => el.style.display = (tipo === 'individual' ? '' : 'none'));
+        document.querySelectorAll('.owner-juridico-fields').forEach(el => el.style.display = (tipo === 'juridico' ? '' : 'none'));
+    }
+
+    populateOwnerForm(owner) {
+        document.getElementById('ownerTipo').value = owner.tipo;
+        this.updateOwnerFormVisibility(owner.tipo);
+        document.getElementById('ownerNombre').value = owner.nombre || '';
+        document.getElementById('ownerIdentificacion').value = owner.identificacion || '';
+        document.getElementById('ownerRazonSocial').value = owner.razon_social || '';
+        document.getElementById('ownerIdentificacionJuridica').value = owner.identificacion_juridica || '';
+        document.getElementById('ownerApoderadoNombre').value = owner.apoderado_nombre || '';
+        document.getElementById('ownerApoderadoIdentificacion').value = owner.apoderado_identificacion || '';
+    }
+
+    // CRUD propietarios
+    async handleOwnerSubmit(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const o = Object.fromEntries(formData.entries());
+        const tipo = o.ownerTipo;
+        if (tipo === 'individual') {
+            if (!o.ownerNombre || !o.ownerIdentificacion) {
+                this.showToast('Nombre e identificación son requeridos', 'error');
+                return;
+            }
+        } else {
+            if (!o.ownerRazonSocial || !o.ownerIdentificacionJuridica || !o.ownerApoderadoNombre || !o.ownerApoderadoIdentificacion) {
+                this.showToast('Completa todos los campos jurídicos', 'error');
+                return;
+            }
+        }
+
+        try {
+            this.showLoading(true);
+            if (this.isEditingOwner) {
+                await this.updateOwner(o);
+            } else {
+                await this.createOwner(o);
+            }
+            this.hideOwnerModal();
+            this.loadOwners(true);
+            // Actualizar dropdown de propietarios del vehículo si existe
+            this.populateOwnersDropdown();
+        } catch (error) {
+            console.error('Error al guardar propietario:', error);
+            this.showToast('Error al guardar propietario: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    hideOwnerModal() {
+        const modalElement = document.getElementById('ownerModal');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) modal.hide();
+        this.currentOwner = null;
+        this.isEditingOwner = false;
+    }
+
+    async createOwner(o) {
+        const { error } = await supabase.from('propietarios').insert([{
+            tipo: o.ownerTipo,
+            nombre: o.ownerTipo === 'individual' ? o.ownerNombre : null,
+            identificacion: o.ownerTipo === 'individual' ? o.ownerIdentificacion : null,
+            razon_social: o.ownerTipo === 'juridico' ? o.ownerRazonSocial : null,
+            identificacion_juridica: o.ownerTipo === 'juridico' ? o.ownerIdentificacionJuridica : null,
+            apoderado_nombre: o.ownerTipo === 'juridico' ? o.ownerApoderadoNombre : null,
+            apoderado_identificacion: o.ownerTipo === 'juridico' ? o.ownerApoderadoIdentificacion : null,
+            activo: true
+        }]);
+        if (error) throw error;
+        this.showToast('Propietario creado', 'success');
+    }
+
+    async updateOwner(o) {
+        const { error } = await supabase.from('propietarios').update({
+            tipo: o.ownerTipo,
+            nombre: o.ownerTipo === 'individual' ? o.ownerNombre : null,
+            identificacion: o.ownerTipo === 'individual' ? o.ownerIdentificacion : null,
+            razon_social: o.ownerTipo === 'juridico' ? o.ownerRazonSocial : null,
+            identificacion_juridica: o.ownerTipo === 'juridico' ? o.ownerIdentificacionJuridica : null,
+            apoderado_nombre: o.ownerTipo === 'juridico' ? o.ownerApoderadoNombre : null,
+            apoderado_identificacion: o.ownerTipo === 'juridico' ? o.ownerApoderadoIdentificacion : null,
+            updated_at: new Date().toISOString()
+        }).eq('id', this.currentOwner.id);
+        if (error) throw error;
+        this.showToast('Propietario actualizado', 'success');
+    }
+
+    editOwner(id) {
+        const owner = this.owners.find(o => o.id === id);
+        if (owner) this.showOwnerModal(owner);
+    }
+
+    async deleteOwner(id) {
+        try {
+            this.showLoading(true);
+            // Intentar borrar, si hay FK, RESTRICT lo impedirá
+            const { error } = await supabase.from('propietarios').delete().eq('id', id);
+            if (error) throw error;
+            this.showToast('Propietario eliminado', 'success');
+            this.loadOwners(true);
+            this.populateOwnersDropdown();
+        } catch (error) {
+            this.showToast('No se puede eliminar: puede estar asignado a vehículos', 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    // Dropdown en el modal de vehículo
+    populateOwnersDropdown() {
+        const selector = document.getElementById('propietario');
+        if (!selector) return;
+        const currentValue = selector.value;
+        selector.innerHTML = '<option value="">Seleccionar propietario...</option>';
+        this.owners.filter(o => o.activo).forEach(o => {
+            const option = document.createElement('option');
+            option.value = o.id;
+            option.textContent = (o.tipo === 'juridico' ? (o.razon_social || '-') : (o.nombre || '-'));
+            selector.appendChild(option);
+        });
+        if (currentValue) selector.value = currentValue;
+    }
     
     // Renderizar tabla de estados
     renderEstados() {
@@ -813,6 +1125,8 @@ class VictorApp {
             this.showCarroceriaModal();
         } else if (this.currentSubModule === 'estados') {
             this.showEstadoModal();
+        } else if (this.currentSubModule === 'propietarios') {
+            this.showOwnerModal();
         } else {
             this.showVehicleModal();
         }
@@ -845,6 +1159,7 @@ class VictorApp {
         this.populateBrandsDropdown();
         this.populateCarroceriasDropdown();
         this.populateEstadosDropdown();
+        this.populateOwnersDropdown();
         
         modal.show();
         
@@ -1372,6 +1687,76 @@ class VictorApp {
         if (currentValue) {
             selector.value = currentValue;
         }
+    }
+
+    // Ajuste create/update vehículo para enviar propietario_id
+    async createVehicle(vehicleData) {
+        if (!supabase) {
+            throw new Error('Supabase no está inicializado');
+        }
+        const { data, error } = await supabase
+            .from('vehiculos')
+            .insert([{
+                placa: vehicleData.placa,
+                marca_id: parseInt(vehicleData.marca),
+                modelo_id: parseInt(vehicleData.modelo),
+                año: parseInt(vehicleData.año),
+                carroceria_id: vehicleData.carroceria ? parseInt(vehicleData.carroceria) : null,
+                cilindrada: vehicleData.cilindrada ? parseInt(vehicleData.cilindrada) : null,
+                cilindros: vehicleData.cilindros ? parseInt(vehicleData.cilindros) : null,
+                combustible: vehicleData.combustible,
+                transmision: vehicleData.transmision,
+                traccion: vehicleData.traccion,
+                color: vehicleData.color,
+                vin: vehicleData.vin,
+                leasing_semanal: vehicleData.leasing_semanal ? parseFloat(vehicleData.leasing_semanal) : null,
+                gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
+                valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
+                estado_id: vehicleData.estado ? parseInt(vehicleData.estado) : null,
+                propietario_id: vehicleData.propietario ? parseInt(vehicleData.propietario) : null,
+                estado: 'activo'
+            }])
+            .select();
+        if (error) {
+            throw error;
+        }
+        this.showToast('Vehículo creado exitosamente', 'success');
+        return data[0];
+    }
+
+    async updateVehicle(vehicleData) {
+        if (!supabase) {
+            throw new Error('Supabase no está inicializado');
+        }
+        const { data, error } = await supabase
+            .from('vehiculos')
+            .update({
+                placa: vehicleData.placa,
+                marca_id: parseInt(vehicleData.marca),
+                modelo_id: parseInt(vehicleData.modelo),
+                año: parseInt(vehicleData.año),
+                carroceria_id: vehicleData.carroceria ? parseInt(vehicleData.carroceria) : null,
+                cilindrada: vehicleData.cilindrada ? parseInt(vehicleData.cilindrada) : null,
+                cilindros: vehicleData.cilindros ? parseInt(vehicleData.cilindros) : null,
+                combustible: vehicleData.combustible,
+                transmision: vehicleData.transmision,
+                traccion: vehicleData.traccion,
+                color: vehicleData.color,
+                vin: vehicleData.vin,
+                leasing_semanal: vehicleData.leasing_semanal ? parseFloat(vehicleData.leasing_semanal) : null,
+                gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
+                valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
+                estado_id: vehicleData.estado ? parseInt(vehicleData.estado) : null,
+                propietario_id: vehicleData.propietario ? parseInt(vehicleData.propietario) : null,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', this.currentVehicle.id)
+            .select();
+        if (error) {
+            throw error;
+        }
+        this.showToast('Vehículo actualizado exitosamente', 'success');
+        return data[0];
     }
     
     // ===== CRUD OPERATIONS - [El resto de las funciones permanecen igual] =====
@@ -2140,6 +2525,7 @@ class VictorApp {
                 <td>${vehicle.modelos?.nombre || '-'}</td>
                 <td>${vehicle.año}</td>
                 <td>${vehicle.carrocerias?.nombre || '-'}</td>
+                <td>${this.formatOwnerName(vehicle.propietarios)}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${this.formatCombustible(vehicle.combustible)}</td>
                 <td>

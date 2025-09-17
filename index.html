@@ -58,6 +58,10 @@
                             <i class="fas fa-flag nav-icon"></i>
                             <span class="nav-text">Estados</span>
                         </a>
+                        <a class="nav-link submenu-link" href="#" data-submodule="propietarios">
+                            <i class="fas fa-user-tie nav-icon"></i>
+                            <span class="nav-text">Propietarios</span>
+                        </a>
                     </div>
                 </li>
             </ul>
@@ -132,6 +136,7 @@
                                         <th class="fw-semibold">Modelo</th>
                                         <th class="fw-semibold">Año</th>
                                         <th class="fw-semibold">Carrocería</th>
+                                        <th class="fw-semibold">Propietario</th>
                                         <th class="fw-semibold">Color</th>
                                         <th class="fw-semibold">Combustible</th>
                                         <th class="fw-semibold">Estado</th>
@@ -300,6 +305,52 @@
                                 </thead>
                                 <tbody id="estadosTableBody">
                                     <!-- Estados will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Propietarios Table -->
+                <div class="card shadow-sm" id="ownersTable" style="display: none;">
+                    <div class="card-header bg-white border-bottom">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-user-tie text-primary me-2"></i>
+                                    Lista de Propietarios
+                                </h5>
+                            </div>
+                            <div class="col-auto">
+                                <div class="d-flex gap-2">
+                                    <select class="form-select form-select-sm" id="ownerTypeFilterSelect">
+                                        <option value="">Todos los tipos</option>
+                                        <option value="individual">Individual</option>
+                                        <option value="juridico">Jurídico</option>
+                                    </select>
+                                    <select class="form-select form-select-sm" id="ownerActiveFilterSelect">
+                                        <option value="">Todos</option>
+                                        <option value="true">Activos</option>
+                                        <option value="false">Inactivos</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="fw-semibold">Tipo</th>
+                                        <th class="fw-semibold">Nombre/Razón Social</th>
+                                        <th class="fw-semibold">Identificación</th>
+                                        <th class="fw-semibold">Apoderado</th>
+                                        <th class="fw-semibold">Estado</th>
+                                        <th class="fw-semibold text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ownersTableBody">
                                 </tbody>
                             </table>
                         </div>
@@ -541,6 +592,18 @@
                                 <input type="text" class="form-control" id="vin" name="vin" maxlength="17" placeholder="17 caracteres alfanuméricos">
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label fw-semibold">Propietario</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="propietario" name="propietario">
+                                        <option value="">Seleccionar propietario...</option>
+                                    </select>
+                                    <button class="btn btn-outline-primary" type="button" id="openOwnerModalQuick">
+                                        <i class="fas fa-user-plus"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">Solo propietarios activos aparecen en la lista</div>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label fw-semibold">Estado del Vehículo</label>
                                 <select class="form-select" id="estado" name="estado" required>
                                     <option value="">Seleccionar estado...</option>
@@ -750,6 +813,66 @@
 
     <!-- Toast Container -->
     <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+    <!-- Owner Modal -->
+    <div class="modal fade" id="ownerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="ownerModalTitle">
+                        <i class="fas fa-user-tie me-2"></i>
+                        Agregar Propietario
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="ownerModalClose"></button>
+                </div>
+                <form id="ownerForm">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+                                <select class="form-select" id="ownerTipo" name="ownerTipo" required>
+                                    <option value="individual">Individual</option>
+                                    <option value="juridico">Jurídico</option>
+                                </select>
+                            </div>
+                            <div class="col-12 owner-individual-fields">
+                                <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="ownerNombre" name="ownerNombre" maxlength="150">
+                            </div>
+                            <div class="col-12 owner-individual-fields">
+                                <label class="form-label fw-semibold">Identificación <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="ownerIdentificacion" name="ownerIdentificacion" maxlength="50">
+                            </div>
+
+                            <div class="col-12 owner-juridico-fields" style="display:none">
+                                <label class="form-label fw-semibold">Razón Social <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="ownerRazonSocial" name="ownerRazonSocial" maxlength="200">
+                            </div>
+                            <div class="col-12 owner-juridico-fields" style="display:none">
+                                <label class="form-label fw-semibold">Identificación Jurídica <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="ownerIdentificacionJuridica" name="ownerIdentificacionJuridica" maxlength="50">
+                            </div>
+                            <div class="col-12 owner-juridico-fields" style="display:none">
+                                <label class="form-label fw-semibold">Nombre del Apoderado <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="ownerApoderadoNombre" name="ownerApoderadoNombre" maxlength="150">
+                            </div>
+                            <div class="col-12 owner-juridico-fields" style="display:none">
+                                <label class="form-label fw-semibold">Identificación del Apoderado <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="ownerApoderadoIdentificacion" name="ownerApoderadoIdentificacion" maxlength="50">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" id="cancelOwnerBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="saveOwnerBtn">
+                            <i class="fas fa-save me-2"></i>
+                            Guardar Propietario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
