@@ -1012,6 +1012,16 @@ class VictorApp {
                 if (created) {
                     const selector = document.getElementById('propietario');
                     if (selector) selector.value = created.id;
+                    // Si estamos editando un vehículo existente, persistir el enlace inmediatamente
+                    if (this.currentVehicle && this.isEditing) {
+                        try {
+                            await this.linkVehicleOwner(this.currentVehicle.id, created.id);
+                            this.showToast('Propietario vinculado al vehículo', 'success');
+                            await this.loadVehicles();
+                        } catch (e) {
+                            console.error('No se pudo vincular propietario al vehículo:', e);
+                        }
+                    }
                 }
             }
             this.populateOwnersDropdown();
@@ -1090,6 +1100,14 @@ class VictorApp {
         } catch {
             return null;
         }
+    }
+
+    async linkVehicleOwner(vehicleId, ownerId) {
+        const { error } = await supabase
+            .from('vehiculos')
+            .update({ propietario_id: ownerId, updated_at: new Date().toISOString() })
+            .eq('id', vehicleId);
+        if (error) throw error;
     }
 
     editOwner(id) {
