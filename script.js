@@ -586,9 +586,6 @@ class VictorApp {
                 <td>${vehicle.carrocerias?.nombre || '-'}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${this.formatCombustible(vehicle.combustible)}</td>
-                <td class="text-end fw-semibold text-success">${this.formatColones(vehicle.leasing_semanal)}</td>
-                <td class="text-end fw-semibold text-info">${this.formatColones(vehicle.gastos_formalizacion)}</td>
-                <td class="text-end fw-semibold text-warning">${this.formatColones(vehicle.valor_adquisicion)}</td>
                 <td>
                     <span class="badge bg-${vehicle.estados?.color || 'secondary'}">
                         ${vehicle.estados?.nombre || 'Sin estado'}
@@ -2145,9 +2142,6 @@ class VictorApp {
                 <td>${vehicle.carrocerias?.nombre || '-'}</td>
                 <td>${vehicle.color || '-'}</td>
                 <td>${this.formatCombustible(vehicle.combustible)}</td>
-                <td class="text-end fw-semibold text-success">${this.formatColones(vehicle.leasing_semanal)}</td>
-                <td class="text-end fw-semibold text-info">${this.formatColones(vehicle.gastos_formalizacion)}</td>
-                <td class="text-end fw-semibold text-warning">${this.formatColones(vehicle.valor_adquisicion)}</td>
                 <td>
                     <span class="badge bg-${vehicle.estados?.color || 'secondary'}">
                         ${vehicle.estados?.nombre || 'Sin estado'}
