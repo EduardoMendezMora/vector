@@ -1956,6 +1956,13 @@ class VictorApp {
         const formData = new FormData(e.target);
         const vehicleData = Object.fromEntries(formData.entries());
         this.debugLog('handleVehicleSubmit:formData', vehicleData);
+        // Log puntual del propietario capturado por el formulario y por el DOM
+        const propietarioSelectEl = document.getElementById('propietario');
+        const propietarioByDom = propietarioSelectEl ? propietarioSelectEl.value : null;
+        this.debugLog('handleVehicleSubmit:propietarioValues', {
+            byFormData: vehicleData.propietario ?? null,
+            byDom: propietarioByDom
+        });
         
         // Validar campos requeridos
         if (!vehicleData.placa || !vehicleData.marca || !vehicleData.modelo || !vehicleData.año) {
