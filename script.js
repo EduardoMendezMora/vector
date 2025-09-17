@@ -156,6 +156,12 @@ class VictorApp {
         document.getElementById('marca').addEventListener('change', (e) => this.handleMarcaChange(e));
         const openOwnerModalQuick = document.getElementById('openOwnerModalQuick');
         if (openOwnerModalQuick) openOwnerModalQuick.addEventListener('click', () => this.showOwnerModal());
+        const openBrandModalQuick = document.getElementById('openBrandModalQuick');
+        if (openBrandModalQuick) openBrandModalQuick.addEventListener('click', () => this.quickAddBrand());
+        const openModelModalQuick = document.getElementById('openModelModalQuick');
+        if (openModelModalQuick) openModelModalQuick.addEventListener('click', () => this.quickAddModel());
+        const openCarroceriaModalQuick = document.getElementById('openCarroceriaModalQuick');
+        if (openCarroceriaModalQuick) openCarroceriaModalQuick.addEventListener('click', () => this.quickAddCarroceria());
     }
     
     // Configurar eventos de modal de forma genérica
@@ -1078,6 +1084,71 @@ class VictorApp {
             selector.appendChild(option);
         });
         if (currentValue) selector.value = currentValue;
+    }
+
+    // ====== QUICK ADD desde modal de Vehículo ======
+    async quickAddBrand() {
+        this.quickContext = { fromVehicleModal: true };
+        this.showBrandModal();
+        // Al guardar, createBrand ya refresca; aquí escuchamos el cierre para seleccionar la última creada
+        const saveBtn = document.getElementById('saveBrandBtn');
+        const handler = async () => {
+            // Esperar a que loadBrands termine
+            await this.loadBrands();
+            this.populateBrandsDropdown();
+            // Seleccionar la marca más reciente (asumiendo id secuencial)
+            const last = this.brands[this.brands.length - 1];
+            if (last) {
+                const marcaSelect = document.getElementById('marca');
+                marcaSelect.value = last.id;
+                this.populateModelsDropdown(last.id);
+            }
+            saveBtn.removeEventListener('click', handler);
+        };
+        saveBtn.addEventListener('click', handler);
+    }
+
+    async quickAddModel() {
+        const marcaSelect = document.getElementById('marca');
+        const marcaId = marcaSelect?.value;
+        if (!marcaId) {
+            this.showToast('Selecciona primero una marca', 'warning');
+            return;
+        }
+        this.showModelModal();
+        // Preseleccionar la marca en el modal de modelo
+        setTimeout(() => {
+            const modelBrand = document.getElementById('modelBrand');
+            if (modelBrand) modelBrand.value = marcaId;
+        }, 50);
+        const saveBtn = document.getElementById('saveModelBtn');
+        const handler = async () => {
+            await this.loadModels();
+            this.populateModelsDropdown(marcaId);
+            const last = this.models.filter(m => m.marca_id == marcaId).slice(-1)[0];
+            if (last) {
+                const modeloSelect = document.getElementById('modelo');
+                modeloSelect.value = last.id;
+            }
+            saveBtn.removeEventListener('click', handler);
+        };
+        saveBtn.addEventListener('click', handler);
+    }
+
+    async quickAddCarroceria() {
+        this.showCarroceriaModal();
+        const saveBtn = document.getElementById('saveCarroceriaBtn');
+        const handler = async () => {
+            await this.loadCarrocerias();
+            this.populateCarroceriasDropdown();
+            const last = this.carrocerias[this.carrocerias.length - 1];
+            if (last) {
+                const select = document.getElementById('carroceria');
+                select.value = last.id;
+            }
+            saveBtn.removeEventListener('click', handler);
+        };
+        saveBtn.addEventListener('click', handler);
     }
     
     // Renderizar tabla de estados
