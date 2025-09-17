@@ -1117,7 +1117,7 @@ class VictorApp {
     }
 
     async linkVehicleOwner(vehicleId, ownerId) {
-        const parsedOwnerId = ownerId ? String(ownerId) : null;
+        const parsedOwnerId = ownerId ? parseInt(ownerId, 10) : null;
         this.debugLog('linkVehicleOwner:payload', { vehicleId, ownerId, parsedOwnerId });
         const { error } = await supabase
             .from('vehiculos')
@@ -1872,7 +1872,7 @@ class VictorApp {
         }
         this.debugLog('createVehicle:payload', {
             ...vehicleData,
-            propietario_id: vehicleData.propietario ? String(vehicleData.propietario) : null
+            propietario_id: vehicleData.propietario ? parseInt(vehicleData.propietario, 10) : null
         });
         const { data, error } = await supabase
             .from('vehiculos')
@@ -1893,7 +1893,7 @@ class VictorApp {
                 gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
                 valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
                 estado_id: vehicleData.estado ? parseInt(vehicleData.estado) : null,
-                propietario_id: vehicleData.propietario ? String(vehicleData.propietario) : null,
+                propietario_id: vehicleData.propietario ? parseInt(vehicleData.propietario, 10) : null,
                 estado: 'activo'
             }])
             .select();
@@ -1913,7 +1913,7 @@ class VictorApp {
         this.debugLog('updateVehicle:payload', {
             id: this.currentVehicle?.id || null,
             ...vehicleData,
-            propietario_id: vehicleData.propietario ? String(vehicleData.propietario) : null
+            propietario_id: vehicleData.propietario ? parseInt(vehicleData.propietario, 10) : null
         });
         const { data, error } = await supabase
             .from('vehiculos')
@@ -1934,7 +1934,7 @@ class VictorApp {
                 gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
                 valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
                 estado_id: vehicleData.estado ? parseInt(vehicleData.estado) : null,
-                propietario_id: vehicleData.propietario ? String(vehicleData.propietario) : null,
+                propietario_id: vehicleData.propietario ? parseInt(vehicleData.propietario, 10) : null,
                 updated_at: new Date().toISOString()
             })
             .eq('id', this.currentVehicle.id)
