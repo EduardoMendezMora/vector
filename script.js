@@ -447,12 +447,6 @@ class VictorApp {
                         id,
                         nombre,
                         color
-                    ),
-                    propietarios:propietarios!fk_vehiculos_propietario (
-                        id,
-                        tipo,
-                        nombre,
-                        razon_social
                     )
                 `)
                 .order('created_at', { ascending: false });
@@ -1137,10 +1131,16 @@ class VictorApp {
         if (!selector) return;
         const currentValue = selector.value;
         selector.innerHTML = '<option value="">Seleccionar propietario...</option>';
-        this.owners.filter(o => o.activo).forEach(o => {
+        // Incluir solo activos en la lista, pero si el propietario actual está inactivo, mantenerlo visible
+        const currentOwnerId = this.currentVehicle?.propietario_id;
+        const list = this.owners.filter(o => o.activo || o.id === currentOwnerId);
+        list.forEach(o => {
             const option = document.createElement('option');
             option.value = o.id;
             option.textContent = (o.tipo === 'juridico' ? (o.razon_social || '-') : (o.nombre || '-'));
+            if (o.id === currentOwnerId && o.activo === false) {
+                option.textContent += ' (inactivo)';
+            }
             selector.appendChild(option);
         });
         if (currentValue) selector.value = currentValue;
@@ -1327,6 +1327,15 @@ class VictorApp {
                     }
                 }
             }, 100);
+            // Preseleccionar propietario actual si existe
+            setTimeout(() => {
+                if (vehicle.propietario_id) {
+                    const ownerSelect = document.getElementById('propietario');
+                    if (ownerSelect) {
+                        ownerSelect.value = vehicle.propietario_id;
+                    }
+                }
+            }, 120);
         }
         
         // Focus en el primer campo
