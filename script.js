@@ -1655,7 +1655,7 @@ class VictorApp {
         // Llenar campos normales
         fields.forEach(field => {
             const element = document.getElementById(field);
-            if (element && vehicle[field]) {
+            if (element && vehicle[field] !== undefined && vehicle[field] !== null) {
                 element.value = vehicle[field];
             }
         });
@@ -2030,7 +2030,14 @@ class VictorApp {
                 if (updated && updated.id) {
                     const idx = this.vehicles.findIndex(v => v.id === updated.id);
                     if (idx !== -1) {
-                        this.vehicles[idx] = { ...this.vehicles[idx], ...updated, propietario_id: selectedOwnerId };
+                        this.vehicles[idx] = {
+                            ...this.vehicles[idx],
+                            ...updated,
+                            propietario_id: selectedOwnerId,
+                            plazo_contrato_semanas: vehicleData.plazo_contrato_semanas
+                                ? parseFloat(vehicleData.plazo_contrato_semanas)
+                                : null
+                        };
                         this.renderVehicles();
                         this.debugLog('handleVehicleSubmit:update:appliedToLocalState', this.vehicles[idx]);
                     }
