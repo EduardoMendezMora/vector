@@ -34,8 +34,12 @@
       e.preventDefault();
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { alert('Credenciales inválidas'); return; }
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.error('Auth error:', error);
+        alert(error.message || 'Credenciales inválidas');
+        return;
+      }
       redirectTo('index.html');
     });
   }
