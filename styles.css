@@ -318,14 +318,14 @@ body {
 }
 
 .card-header {
-  background: var(--vector-gray-50);
+  background: linear-gradient(90deg, var(--vector-navy) 0%, var(--vector-navy-light) 100%);
   border-bottom: 1px solid var(--vector-gray-200);
   padding: 1.25rem;
   border-radius: 12px 12px 0 0 !important;
 }
 
 .card-header h5 {
-  color: var(--vector-navy);
+  color: #ffffff;
   font-weight: 600;
   margin: 0;
 }
