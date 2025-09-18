@@ -32,6 +32,9 @@
     const propietario = v.propietarios
       ? (v.propietarios.tipo === 'juridico' ? (v.propietarios.razon_social || '-') : (v.propietarios.nombre || '-'))
       : '-';
+    const combustibleFmt = v.combustible
+      ? v.combustible.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      : '-';
 
     content.innerHTML = `
       <div class="row g-3">
@@ -39,7 +42,7 @@
           <div class="card h-100">
             <div class="card-header">Identificación</div>
             <div class="card-body">
-              <dl class="row mb-0">
+              <dl class="dl-grid mb-0">
                 <dt class="col-sm-5">Placa</dt><dd class="col-sm-7">${v.placa || '-'}</dd>
                 <dt class="col-sm-5">VIN</dt><dd class="col-sm-7">${v.vin || '-'}</dd>
                 <dt class="col-sm-5">Propietario</dt><dd class="col-sm-7">${propietario}</dd>
@@ -52,14 +55,14 @@
           <div class="card h-100">
             <div class="card-header">Características</div>
             <div class="card-body">
-              <dl class="row mb-0">
+              <dl class="dl-grid mb-0">
                 <dt class="col-sm-5">Marca</dt><dd class="col-sm-7">${v.marcas?.nombre || '-'}</dd>
                 <dt class="col-sm-5">Modelo</dt><dd class="col-sm-7">${v.modelos?.nombre || '-'}</dd>
                 <dt class="col-sm-5">Año</dt><dd class="col-sm-7">${v.año || '-'}</dd>
                 <dt class="col-sm-5">Carrocería</dt><dd class="col-sm-7">${v.carrocerias?.nombre || '-'}</dd>
                 <dt class="col-sm-5">Cilindrada (cc)</dt><dd class="col-sm-7">${v.cilindrada || '-'}</dd>
                 <dt class="col-sm-5">Cilindros</dt><dd class="col-sm-7">${v.cilindros || '-'}</dd>
-                <dt class="col-sm-5">Combustible</dt><dd class="col-sm-7">${v.combustible || '-'}</dd>
+                <dt class="col-sm-5">Combustible</dt><dd class="col-sm-7">${combustibleFmt}</dd>
                 <dt class="col-sm-5">Transmisión</dt><dd class="col-sm-7">${v.transmision || '-'}</dd>
                 <dt class="col-sm-5">Tracción</dt><dd class="col-sm-7">${v.traccion || '-'}</dd>
                 <dt class="col-sm-5">Color</dt><dd class="col-sm-7">${v.color || '-'}</dd>
@@ -71,7 +74,7 @@
           <div class="card h-100">
             <div class="card-header">Económicos</div>
             <div class="card-body">
-              <dl class="row mb-0">
+              <dl class="dl-grid mb-0">
                 <dt class="col-sm-6">Leasing semanal</dt><dd class="col-sm-6">${formatColones(v.leasing_semanal)}</dd>
                 <dt class="col-sm-6">Plazo contractual (semanas)</dt><dd class="col-sm-6">${(v.plazo_contrato_semanas ?? '-')}
                 </dd>
@@ -83,6 +86,70 @@
         </div>
       </div>
     `;
+  }
+
+  function renderLog(items) {
+    const list = document.getElementById('logList');
+    if (!list) return;
+    if (!items || items.length === 0) {
+      list.innerHTML = '<div class="alert alert-light border">Sin comentarios aún.</div>';
+      return;
+    }
+    list.innerHTML = items.map(entry => {
+      const badgeClass = entry.tipo === 'mantenimiento' ? 'bg-success-subtle text-success border-success' :
+                        entry.tipo === 'incidencia' ? 'bg-danger-subtle text-danger border-danger' :
+                        entry.tipo === 'ubicacion' ? 'bg-info-subtle text-info border-info' :
+                        entry.tipo === 'reparacion' ? 'bg-warning-subtle text-warning border-warning' :
+                        'bg-secondary-subtle text-secondary border-secondary';
+      const icon = entry.importante ? '<i class="fas fa-exclamation-triangle text-warning"></i>' : '';
+      const fecha = new Date(entry.created_at).toLocaleString();
+      return `
+        <div class="vlog-item">
+          <div class="vlog-header ${badgeClass}">
+            <span class="vlog-badge">${entry.tipo?.toUpperCase() || 'GENERAL'}</span>
+            <small class="text-muted">Por: ${entry.autor || 'Usuario'} - ${fecha}</small>
+            <span>${icon}</span>
+          </div>
+          <div class="vlog-body">${(entry.comentario || '').replace(/\n/g,'<br>')}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function attachLogModal(vehicle) {
+    const form = document.getElementById('logForm');
+    if (!form) return;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const tipo = document.getElementById('logTipo').value;
+      const comentario = document.getElementById('logComentario').value;
+      const importante = document.getElementById('logImportante').checked;
+      if (!comentario || comentario.trim() === '') return;
+      const payload = {
+        vehiculo_id: vehicle.id,
+        tipo: (tipo || 'general').toLowerCase(),
+        comentario,
+        importante,
+        autor: 'Sistema'
+      };
+      const { error } = await supabase.from('vehiculo_bitacora').insert([payload]);
+      if (error) { alert('No se pudo guardar el comentario'); return; }
+      const modalEl = document.getElementById('logModal');
+      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.hide();
+      form.reset();
+      await loadLog(vehicle.id);
+    });
+  }
+
+  async function loadLog(vehicleId) {
+    const { data, error } = await supabase
+      .from('vehiculo_bitacora')
+      .select('*')
+      .eq('vehiculo_id', vehicleId)
+      .order('created_at', { ascending: false });
+    if (error) { renderLog([]); return; }
+    renderLog(data || []);
   }
 
   async function main() {
@@ -117,6 +184,8 @@
       return;
     }
     renderInfo(data);
+    attachLogModal(data);
+    await loadLog(data.id);
   }
 
   main();

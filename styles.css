@@ -1,3 +1,30 @@
+.dl-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  row-gap: 0.75rem;
+  column-gap: 1.25rem;
+  align-items: start;
+}
+
+.dl-grid dt {
+  grid-column: 1 / 2;
+  margin: 0;
+  padding-top: 0.35rem;
+  color: var(--vector-gray-500);
+  font-weight: 600;
+  border-bottom: 1px dashed var(--vector-gray-200);
+  padding-bottom: 0.35rem;
+}
+
+.dl-grid dd {
+  grid-column: 2 / 3;
+  margin: 0;
+  padding-top: 0.35rem;
+  color: var(--vector-gray-800);
+  font-weight: 500;
+  border-bottom: 1px dashed var(--vector-gray-200);
+  padding-bottom: 0.35rem;
+}
 /* 
  * Véctor - Fleet Management System
  * Custom Bootstrap Theme based on EasyCars Logo Colors
@@ -376,6 +403,40 @@ body {
 }
 
 /* Soft separators between items (mobile friendly) */
+/* ===== Vehicle Log (Bitácora) ===== */
+.vlog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.vlog-item {
+  border: 1px solid var(--vector-gray-200);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--vector-shadow-sm);
+}
+
+.vlog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 12px 12px 0 0;
+  border: 1px solid;
+}
+
+.vlog-badge {
+  background: rgba(0,0,0,0.08);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.vlog-body {
+  padding: 1rem;
+}
 .card dl.row dd + dt {
   border-top: 1px dashed var(--vector-gray-200);
   padding-top: 0.5rem;
