@@ -23,8 +23,8 @@ class VictorApp {
         this.currentModule = 'vehiculos';
         this.currentSubModule = null;
         this.searchTimeout = null;
-        // Debug flag
-        this.debug = true;
+        // Debug flag (desactivado en producción)
+        this.debug = false;
         
         this.init();
     }
@@ -436,7 +436,7 @@ class VictorApp {
     async loadVehicles() {
         try {
             this.showLoading(true);
-            this.debugLog('loadVehicles:start');
+        this.debugLog('loadVehicles:start');
             
             if (!supabase) {
                 throw new Error('Supabase no está inicializado');
@@ -473,12 +473,10 @@ class VictorApp {
                 .order('created_at', { ascending: false });
             
             if (error) {
-                this.debugLog('loadVehicles:error', error);
                 throw error;
             }
             
             this.vehicles = data || [];
-            this.debugLog('loadVehicles:success:count', this.vehicles.length);
             this.renderVehicles();
             
         } catch (error) {
@@ -487,7 +485,6 @@ class VictorApp {
             this.vehicles = [];
             this.renderVehicles();
         } finally {
-            this.debugLog('loadVehicles:end');
             this.showLoading(false);
         }
     }
@@ -1652,7 +1649,7 @@ class VictorApp {
         const fields = [
             'placa', 'año', 
             'cilindrada', 'cilindros', 'combustible', 'transmision', 
-            'traccion', 'color', 'vin', 'leasing_semanal', 'gastos_formalizacion', 'valor_adquisicion'
+            'traccion', 'color', 'vin', 'leasing_semanal', 'plazo_contrato_semanas', 'gastos_formalizacion', 'valor_adquisicion'
         ];
         
         // Llenar campos normales
@@ -1897,6 +1894,7 @@ class VictorApp {
                 color: vehicleData.color,
                 vin: vehicleData.vin,
                 leasing_semanal: vehicleData.leasing_semanal ? parseFloat(vehicleData.leasing_semanal) : null,
+                plazo_contrato_semanas: vehicleData.plazo_contrato_semanas ? parseFloat(vehicleData.plazo_contrato_semanas) : null,
                 gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
                 valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
                 estado_id: vehicleData.estado ? parseInt(vehicleData.estado) : null,
@@ -1905,11 +1903,9 @@ class VictorApp {
             }])
             .select();
         if (error) {
-            this.debugLog('createVehicle:error', error);
             throw error;
         }
         this.showToast('Vehículo creado exitosamente', 'success');
-        this.debugLog('createVehicle:success', data?.[0] || null);
         return data[0];
     }
 
@@ -1938,6 +1934,7 @@ class VictorApp {
                 color: vehicleData.color,
                 vin: vehicleData.vin,
                 leasing_semanal: vehicleData.leasing_semanal ? parseFloat(vehicleData.leasing_semanal) : null,
+                plazo_contrato_semanas: vehicleData.plazo_contrato_semanas ? parseFloat(vehicleData.plazo_contrato_semanas) : null,
                 gastos_formalizacion: vehicleData.gastos_formalizacion ? parseFloat(vehicleData.gastos_formalizacion) : null,
                 valor_adquisicion: vehicleData.valor_adquisicion ? parseFloat(vehicleData.valor_adquisicion) : null,
                 estado_id: vehicleData.estado ? parseInt(vehicleData.estado) : null,
@@ -1947,11 +1944,9 @@ class VictorApp {
             .eq('id', this.currentVehicle.id)
             .select();
         if (error) {
-            this.debugLog('updateVehicle:error', error);
             throw error;
         }
         this.showToast('Vehículo actualizado exitosamente', 'success');
-        this.debugLog('updateVehicle:success', data?.[0] || null);
         return data[0];
     }
     
@@ -1965,13 +1960,6 @@ class VictorApp {
         const formData = new FormData(e.target);
         const vehicleData = Object.fromEntries(formData.entries());
         this.debugLog('handleVehicleSubmit:formData', vehicleData);
-        // Log puntual del propietario capturado por el formulario y por el DOM
-        const propietarioSelectEl = document.getElementById('propietario');
-        const propietarioByDom = propietarioSelectEl ? propietarioSelectEl.value : null;
-        this.debugLog('handleVehicleSubmit:propietarioValues', {
-            byFormData: vehicleData.propietario ?? null,
-            byDom: propietarioByDom
-        });
         
         // Validar campos requeridos
         if (!vehicleData.placa || !vehicleData.marca || !vehicleData.modelo || !vehicleData.año) {
@@ -2006,6 +1994,14 @@ class VictorApp {
             const gastos = parseFloat(vehicleData.gastos_formalizacion);
             if (isNaN(gastos) || gastos < 0) {
                 this.showToast('Los gastos de formalización deben ser un número positivo', 'error');
+                return;
+            }
+        }
+        // Validar plazo contractual si se proporciona
+        if (vehicleData.plazo_contrato_semanas) {
+            const plazo = parseFloat(vehicleData.plazo_contrato_semanas);
+            if (isNaN(plazo) || plazo < 0) {
+                this.showToast('El plazo contractual debe ser un número de semanas válido (>= 0)', 'error');
                 return;
             }
         }
