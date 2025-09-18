@@ -2026,12 +2026,10 @@ class VictorApp {
             if (this.isEditing) {
                 const updated = await this.updateVehicle(vehicleData);
                 this.debugLog('handleVehicleSubmit:update:result', updated);
-                // Si por cualquier razón propietario_id no coincide, forzar actualización focalizada
+                // Forzar actualización del propietario siempre al editar,
+                // para evitar casos donde el update principal no lo persista
                 const selectedOwnerId = vehicleData.propietario ? parseInt(vehicleData.propietario, 10) : null;
-                if ((updated?.propietario_id ?? null) !== (selectedOwnerId ?? null)) {
-                    this.debugLog('handleVehicleSubmit:ownerMismatch:fixing', { updatedPropId: updated?.propietario_id ?? null, selectedOwnerId });
-                    await this.linkVehicleOwner(updated.id, selectedOwnerId);
-                }
+                await this.linkVehicleOwner(updated.id, selectedOwnerId);
                 // Refrescar en memoria inmediatamente para reflejar propietario en la lista
                 if (updated && updated.id) {
                     const idx = this.vehicles.findIndex(v => v.id === updated.id);
