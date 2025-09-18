@@ -139,6 +139,62 @@
     });
   }
 
+  async function loadAssignedUsers(vehicleId) {
+    const tbody = document.getElementById('assignedUsersBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Cargando...</td></tr>';
+    const { data, error } = await supabase
+      .from('vehiculo_usuarios')
+      .select('id, assigned_at, active, profiles:profiles!vehiculo_usuarios_user_id_fkey(id,email,display_name,role,active)')
+      .eq('vehiculo_id', vehicleId)
+      .order('assigned_at', { ascending: false });
+    if (error) { tbody.innerHTML = '<tr><td colspan="6" class="text-danger">'+(error.message||'Error')+'</td></tr>'; return; }
+    const rows = (data||[]).map(r => {
+      const p = r.profiles || {};
+      const assigned = new Date(r.assigned_at).toLocaleString();
+      return `
+        <tr data-row-id="${r.id}" data-user-id="${p.id||''}">
+          <td>${p.email||''}</td>
+          <td>${p.display_name||''}</td>
+          <td>${p.role||''}</td>
+          <td>${p.active ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-secondary">No</span>'}</td>
+          <td>${assigned}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-danger" data-action="unassign"><i class="fas fa-user-minus me-1"></i>Quitar</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    tbody.innerHTML = rows || '<tr><td colspan="6" class="text-muted">Sin usuarios asignados.</td></tr>';
+
+    // Wire unassign buttons
+    tbody.querySelectorAll('button[data-action="unassign"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const tr = btn.closest('tr');
+        const rowId = tr?.getAttribute('data-row-id');
+        if (!rowId) return;
+        if (!confirm('¿Quitar asignación?')) return;
+        const { error } = await supabase.from('vehiculo_usuarios').delete().eq('id', rowId);
+        if (error) { alert(error.message||'No se pudo quitar'); return; }
+        await loadAssignedUsers(vehicleId);
+      });
+    });
+  }
+
+  async function populateAssignableUsers(vehicleId) {
+    const select = document.getElementById('assignUserSelect');
+    if (!select) return;
+    // Traer usuarios activos
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id,email,display_name,active')
+      .eq('active', true)
+      .order('email', { ascending: true });
+    if (error) { select.innerHTML = '<option>Error cargando usuarios</option>'; return; }
+    select.innerHTML = '<option value="">Seleccionar usuario...</option>' +
+      (data||[]).map(p => `<option value="${p.id}">${p.email}${p.display_name?(' — '+p.display_name):''}</option>`).join('');
+  }
+
   function attachLogModal(vehicle) {
     const form = document.getElementById('logForm');
     if (!form) return;
@@ -237,6 +293,21 @@
     renderInfo(data);
     attachLogModal(data);
     await loadLog(data.id);
+
+    // Usuarios asignados UI
+    await populateAssignableUsers(data.id);
+    await loadAssignedUsers(data.id);
+    const assignBtn = document.getElementById('assignUserBtn');
+    if (assignBtn) {
+      assignBtn.addEventListener('click', async () => {
+        const userId = document.getElementById('assignUserSelect').value;
+        if (!userId) return;
+        const { error } = await supabase.from('vehiculo_usuarios').insert([{ vehiculo_id: data.id, user_id: userId }]);
+        if (error) { alert(error.message||'No se pudo asignar'); return; }
+        document.getElementById('assignUserSelect').value = '';
+        await loadAssignedUsers(data.id);
+      });
+    }
   }
 
   main();
