@@ -318,16 +318,67 @@ body {
 }
 
 .card-header {
-  background: linear-gradient(90deg, var(--vector-navy) 0%, var(--vector-navy-light) 100%);
-  border-bottom: 1px solid var(--vector-gray-200);
-  padding: 1.25rem;
-  border-radius: 12px 12px 0 0 !important;
+  /* Navy gradient softened for elegance */
+  background: linear-gradient(135deg, rgba(27,54,93,0.95) 0%, rgba(46,79,122,0.90) 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 1.1rem 1.25rem;
+  border-radius: 14px 14px 0 0 !important;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.08), var(--vector-shadow-sm);
 }
 
 .card-header h5 {
   color: #ffffff;
   font-weight: 600;
   margin: 0;
+}
+
+/* Elegant tabs to match brand */
+.nav-tabs .nav-link {
+  border: none;
+  color: var(--vector-gray-200);
+  background: transparent;
+  margin-right: 0.5rem;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+}
+
+.nav-tabs .nav-link:hover {
+  background: rgba(27, 54, 93, 0.12);
+  color: white;
+}
+
+.nav-tabs .nav-link.active {
+  background: var(--vector-navy);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(27, 54, 93, 0.25);
+}
+
+/* Card polish */
+.card {
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.card .card-body {
+  padding: 1.25rem 1.25rem 1.5rem;
+}
+
+/* Description lists in vehicle card */
+.card dl.row dt {
+  color: var(--vector-gray-500);
+  font-weight: 600;
+}
+
+.card dl.row dd {
+  color: var(--vector-gray-800);
+  font-weight: 500;
+}
+
+/* Soft separators between items (mobile friendly) */
+.card dl.row dd + dt {
+  border-top: 1px dashed var(--vector-gray-200);
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 /* ===== Tables ===== */
