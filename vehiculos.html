@@ -125,6 +125,7 @@
                 </div>
                 <form id="logForm">
                     <div class="modal-body">
+                        <input type="hidden" id="logId">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Tipo de Comentario</label>
                             <select class="form-select" id="logTipo" required>
@@ -149,6 +150,9 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-primary" id="saveLogBtn">
                             <i class="fas fa-save me-2"></i>Guardar Comentario
+                        </button>
+                        <button type="button" class="btn btn-danger d-none" id="deleteLogBtn">
+                            <i class="fas fa-trash me-2"></i>Eliminar
                         </button>
                     </div>
                 </form>

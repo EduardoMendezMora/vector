@@ -88,6 +88,17 @@
     `;
   }
 
+  function openEditLog(entry) {
+    const modalEl = document.getElementById('logModal');
+    const modal = new bootstrap.Modal(modalEl);
+    document.getElementById('logId').value = entry.id;
+    document.getElementById('logTipo').value = entry.tipo;
+    document.getElementById('logComentario').value = entry.comentario;
+    document.getElementById('logImportante').checked = !!entry.importante;
+    document.getElementById('deleteLogBtn').classList.remove('d-none');
+    modal.show();
+  }
+
   function renderLog(items) {
     const list = document.getElementById('logList');
     if (!list) return;
@@ -108,12 +119,24 @@
           <div class="vlog-header ${badgeClass}">
             <span class="vlog-badge">${entry.tipo?.toUpperCase() || 'GENERAL'}</span>
             <small class="text-muted">Por: ${entry.autor || 'Usuario'} - ${fecha}</small>
-            <span>${icon}</span>
+            <span class="d-flex gap-2 align-items-center">
+              ${icon}
+              <button class="btn btn-sm btn-outline-dark" data-action="edit" data-id="${entry.id}"><i class="fas fa-pen"></i></button>
+            </span>
           </div>
           <div class="vlog-body">${(entry.comentario || '').replace(/\n/g,'<br>')}</div>
         </div>
       `;
     }).join('');
+
+    // attach edit handlers
+    list.querySelectorAll('button[data-action="edit"]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = btn.getAttribute('data-id');
+        const { data } = await supabase.from('vehiculo_bitacora').select('*').eq('id', id).maybeSingle();
+        if (data) openEditLog(data);
+      });
+    });
   }
 
   function attachLogModal(vehicle) {
@@ -121,23 +144,51 @@
     if (!form) return;
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const id = document.getElementById('logId').value;
       const tipo = document.getElementById('logTipo').value;
       const comentario = document.getElementById('logComentario').value;
       const importante = document.getElementById('logImportante').checked;
       if (!comentario || comentario.trim() === '') return;
-      const payload = {
-        vehiculo_id: vehicle.id,
-        tipo: (tipo || 'general').toLowerCase(),
-        comentario,
-        importante,
-        autor: 'Sistema'
-      };
-      const { error } = await supabase.from('vehiculo_bitacora').insert([payload]);
+      let error = null;
+      if (id) {
+        const { error: upErr } = await supabase.from('vehiculo_bitacora')
+          .update({ tipo: (tipo || 'general').toLowerCase(), comentario, importante })
+          .eq('id', id);
+        error = upErr;
+      } else {
+        const payload = {
+          vehiculo_id: vehicle.id,
+          tipo: (tipo || 'general').toLowerCase(),
+          comentario,
+          importante,
+          autor: 'Sistema'
+        };
+        const { error: insErr } = await supabase.from('vehiculo_bitacora').insert([payload]);
+        error = insErr;
+      }
       if (error) { alert('No se pudo guardar el comentario'); return; }
       const modalEl = document.getElementById('logModal');
       const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
       modal.hide();
       form.reset();
+      document.getElementById('logId').value = '';
+      document.getElementById('deleteLogBtn').classList.add('d-none');
+      await loadLog(vehicle.id);
+    });
+
+    const deleteBtn = document.getElementById('deleteLogBtn');
+    deleteBtn.addEventListener('click', async () => {
+      const id = document.getElementById('logId').value;
+      if (!id) return;
+      if (!confirm('¿Eliminar este comentario?')) return;
+      const { error } = await supabase.from('vehiculo_bitacora').delete().eq('id', id);
+      if (error) { alert('No se pudo eliminar'); return; }
+      const modalEl = document.getElementById('logModal');
+      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.hide();
+      form.reset();
+      document.getElementById('logId').value = '';
+      document.getElementById('deleteLogBtn').classList.add('d-none');
       await loadLog(vehicle.id);
     });
   }
