@@ -1133,6 +1133,17 @@ class VictorApp {
         this.debugLog('linkVehicleOwner:success');
     }
 
+    async linkVehiclePlazo(vehicleId, plazoSemanas) {
+        const parsed = (plazoSemanas === undefined || plazoSemanas === null || plazoSemanas === '')
+            ? null
+            : parseFloat(String(plazoSemanas).replace(',', '.'));
+        const { error } = await supabase
+            .from('vehiculos')
+            .update({ plazo_contrato_semanas: parsed, updated_at: new Date().toISOString() })
+            .eq('id', vehicleId);
+        if (error) throw error;
+    }
+
     editOwner(id) {
         const owner = this.owners.find(o => o.id === id);
         if (owner) this.showOwnerModal(owner);
@@ -2026,6 +2037,8 @@ class VictorApp {
                 // para evitar casos donde el update principal no lo persista
                 const selectedOwnerId = vehicleData.propietario ? parseInt(vehicleData.propietario, 10) : null;
                 await this.linkVehicleOwner(updated.id, selectedOwnerId);
+                // Forzar actualización del plazo contractual con una operación dedicada (normaliza coma/decimal)
+                await this.linkVehiclePlazo(updated.id, vehicleData.plazo_contrato_semanas);
                 // Refrescar en memoria inmediatamente para reflejar propietario en la lista
                 if (updated && updated.id) {
                     const idx = this.vehicles.findIndex(v => v.id === updated.id);
