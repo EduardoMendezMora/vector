@@ -241,9 +241,15 @@ class VictorApp {
     
     // Manejar navegación
     handleNavigation(e) {
-        e.preventDefault();
-        
         const link = e.target.closest('.nav-link');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        const isExternal = href && href !== '#' && !link.dataset.module && !link.dataset.submodule;
+        // Permitir navegación normal a enlaces externos (p.ej. usuarios.html)
+        if (isExternal) {
+            return; // no preventDefault → deja que el navegador navegue
+        }
+        e.preventDefault();
         const module = link.dataset.module;
         const submodule = link.dataset.submodule;
         
