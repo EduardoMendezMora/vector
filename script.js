@@ -641,6 +641,9 @@ class VictorApp {
                 </td>
                 <td>
                     <div class="action-buttons">
+                        <a class="action-btn view" href="vehiculos.html?id=${vehicle.id}" title="Ver">
+                            <i class="fas fa-eye"></i>
+                        </a>
                         <button class="action-btn edit" onclick="app.editVehicle(${vehicle.id})" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
