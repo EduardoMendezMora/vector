@@ -96,7 +96,7 @@
     }
     await window.SupabaseConfig.testConnection();
 
-    const { data, error } = await window.supabase
+    const { data, error } = await supabase
       .from('vehiculos')
       .select(`
         *,
