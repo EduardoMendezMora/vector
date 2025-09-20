@@ -15,6 +15,55 @@
     box.innerHTML = '<div class="alert '+cls+' p-2 mb-3">'+ html +'</div>';
   }
 
+  // Control de reenvíos (rate limit OTP)
+  const INVITE_COOLDOWN_MS = 60 * 1000;
+  const inviteTimers = new Map();
+
+  function getInviteCooldownLeft(email) {
+    try {
+      const key = 'invite_last_'+ (email||'').toLowerCase();
+      const ts = Number(localStorage.getItem(key));
+      if (!ts) return 0;
+      const left = ts + INVITE_COOLDOWN_MS - Date.now();
+      return left > 0 ? left : 0;
+    } catch(_) { return 0; }
+  }
+
+  function startInviteCooldown(email, seconds) {
+    const ms = typeof seconds === 'number' && seconds > 0 ? seconds*1000 : INVITE_COOLDOWN_MS;
+    const key = 'invite_last_'+ (email||'').toLowerCase();
+    try { localStorage.setItem(key, String(Date.now() - (INVITE_COOLDOWN_MS - ms))); } catch(_) {}
+    applyCooldownToRows(email);
+  }
+
+  function applyCooldownToRows(email) {
+    const normalized = (email||'').toLowerCase();
+    const rows = Array.from(document.querySelectorAll('tr[data-pending-email]'));
+    rows.forEach(tr => {
+      const e = (tr.getAttribute('data-pending-email')||'').toLowerCase();
+      if (e !== normalized) return;
+      const btn = tr.querySelector('.btn-resend-invite');
+      if (!btn) return;
+      const prev = inviteTimers.get(normalized);
+      if (prev) clearInterval(prev);
+      const tick = () => {
+        const left = getInviteCooldownLeft(normalized);
+        if (left > 0) {
+          btn.disabled = true;
+          btn.textContent = 'Reenviar ('+ Math.ceil(left/1000) +'s)';
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Reenviar';
+          const t = inviteTimers.get(normalized);
+          if (t) { clearInterval(t); inviteTimers.delete(normalized); }
+        }
+      };
+      tick();
+      const interval = setInterval(tick, 1000);
+      inviteTimers.set(normalized, interval);
+    });
+  }
+
   async function ensureInit() {
     if (!window.SupabaseConfig?.initialize()) {
       toast('Supabase no inicializado');
@@ -122,6 +171,12 @@
 
     // Aplicar filtro actual luego de renderizar
     applyFilter();
+
+    // Reaplicar cooldown visual a todas las filas pendientes visibles
+    Array.from(document.querySelectorAll('tr[data-pending-email]')).forEach(tr => {
+      const email = tr.getAttribute('data-pending-email');
+      applyCooldownToRows(email);
+    });
   }
 
   function applyFilter() {
@@ -213,9 +268,18 @@
         toast('Usuario actualizado');
       }
       if (btnResend && pendingEmail) {
+        const left = getInviteCooldownLeft(pendingEmail);
+        if (left > 0) { toast('Espera '+Math.ceil(left/1000)+'s para reenviar'); return; }
         const { error: mailErr } = await supabase.auth.signInWithOtp({ email: pendingEmail, options: { emailRedirectTo: window.location.origin + '/login.html' } });
         if (mailErr) { alert(mailErr.message || 'No se pudo reenviar'); return; }
         toast('Invitación reenviada');
+        // Algunos proveedores devuelven un mensaje de rate limit. Si llega, aplicamos 60s; si no, iniciamos cooldown por defecto.
+        const hinted = /only request this after\s+(\d+)\s*seconds/i.exec(mailErr?.message||'');
+        if (hinted && hinted[1]) {
+          startInviteCooldown(pendingEmail, Number(hinted[1]));
+        } else {
+          startInviteCooldown(pendingEmail);
+        }
       }
       if (btnCancel && pendingEmail) {
         if (!confirm('¿Cancelar la invitación pendiente?')) return;
