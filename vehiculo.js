@@ -335,7 +335,12 @@
         const msg = error.message||'';
         if (/v_tasks_with_assignees|schema cache|relation .* does not exist/i.test(msg)) {
           const { data: tdata, error: tErr } = await supabase.from('tasks').select('id,title,status,priority,due_date').eq('vehiculo_id', data.id).order('created_at', { ascending:false });
-          if (tErr) { tbody.innerHTML = '<tr><td colspan="5" class="text-danger">'+(tErr.message||'Error')+'</td></tr>'; return; }
+          if (tErr) {
+            const msg2 = tErr.message||'';
+            if (/public.*tasks.*schema cache|relation .* does not exist/i.test(msg2)) {
+              tasksNotice('Falta cargar el schema de tareas. Ejecuta 15_tasks_setup.sql y luego: NOTIFY pgrst, \"reload schema\";', 'warning');
+            }
+            tbody.innerHTML = '<tr><td colspan="5" class="text-danger">'+(msg2||'Error')+'</td></tr>'; return; }
           const ids = (tdata||[]).map(t=>t.id);
           const counts = new Map();
           if (ids.length){

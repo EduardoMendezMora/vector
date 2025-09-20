@@ -47,7 +47,11 @@
         if (hasta) q2 = q2.lte('due_date', hasta);
         const { data: tdata, error: tErr } = await q2;
         if (tErr) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-danger">'+ (tErr.message||'Error') +'</td></tr>';
+          const msg2 = tErr.message||'';
+          if (/public.*tasks.*schema cache|relation .* does not exist/i.test(msg2)) {
+            setNotice('Falta cargar el schema de tareas. Ejecuta 15_tasks_setup.sql y luego: NOTIFY pgrst, \"reload schema\"; en Supabase.', 'warning');
+          }
+          tbody.innerHTML = '<tr><td colspan="7" class="text-danger">'+ (msg2||'Error') +'</td></tr>';
           return;
         }
         // 2) Traer asignaciones y contar
