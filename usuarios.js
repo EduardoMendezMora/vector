@@ -33,16 +33,25 @@
     const tbody = document.getElementById('usersTableBody');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>';
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id,email,display_name,role,active,created_at')
-      .order('created_at', { ascending: false });
-    if (error) { tbody.innerHTML = '<tr><td colspan="6" class="text-danger">'+(error.message||'Error')+'</td></tr>'; return; }
-    tbody.innerHTML = (data||[]).map(p => {
+    const [profilesRes, pendingRes] = await Promise.all([
+      supabase.from('profiles').select('id,email,display_name,role,active,created_at').order('created_at', { ascending: false }),
+      supabase.from('profile_pending_prefs').select('email,display_name,role,active,created_at').order('created_at', { ascending: false })
+    ]);
+    if (profilesRes.error || pendingRes.error) {
+      const msg = (profilesRes.error||pendingRes.error).message || 'Error';
+      tbody.innerHTML = '<tr><td colspan="6" class="text-danger">'+ msg +'</td></tr>';
+      return;
+    }
+
+    const rowsProfiles = (profilesRes.data||[]).map(p => {
       const created = new Date(p.created_at).toLocaleString();
       const chk = p.active ? 'checked' : '';
+      const state = p.active ? 'active' : 'inactive';
+      const stateBadge = p.active
+        ? '<span class="badge bg-success">Activo</span>'
+        : '<span class="badge bg-secondary">Inactivo</span>';
       return `
-        <tr data-id="${p.id}">
+        <tr data-id="${p.id}" data-state="${state}">
           <td>${p.email||''}</td>
           <td>${p.display_name||''}</td>
           <td>
@@ -55,6 +64,7 @@
           <td class="text-center">
             <input type="checkbox" class="form-check-input user-active" ${chk} />
           </td>
+          <td>${stateBadge}</td>
           <td>${created}</td>
           <td class="text-center">
             <button class="btn btn-sm btn-primary btn-save-user"><i class="fas fa-save me-1"></i>Guardar</button>
@@ -62,6 +72,52 @@
         </tr>
       `;
     }).join('');
+
+    const rowsPending = (pendingRes.data||[]).map(p => {
+      const created = new Date(p.created_at).toLocaleString();
+      const chk = p.active ? 'checked' : '';
+      return `
+        <tr data-pending-email="${p.email}" data-state="pending">
+          <td>${p.email||''} <span class="badge bg-warning text-dark ms-2">Pendiente</span></td>
+          <td>${p.display_name||''}</td>
+          <td>
+            <select class="form-select form-select-sm user-role">
+              <option value="user" ${p.role==='user'?'selected':''}>Usuario</option>
+              <option value="admin" ${p.role==='admin'?'selected':''}>Admin</option>
+              <option value="super_admin" ${p.role==='super_admin'?'selected':''}>Super Admin</option>
+            </select>
+          </td>
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input user-active" ${chk} />
+          </td>
+          <td><span class="badge bg-warning text-dark">Pendiente</span></td>
+          <td>${created}</td>
+          <td class="text-center">
+            <div class="btn-group btn-group-sm" role="group">
+              <button class="btn btn-primary btn-save-user"><i class="fas fa-save me-1"></i>Guardar</button>
+              <button class="btn btn-outline-secondary btn-resend-invite"><i class="fas fa-paper-plane me-1"></i>Reenviar</button>
+              <button class="btn btn-outline-danger btn-cancel-invite"><i class="fas fa-times me-1"></i>Cancelar</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.innerHTML = rowsPending + rowsProfiles;
+
+    // Aplicar filtro actual luego de renderizar
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const select = document.getElementById('filterStatus');
+    const value = (select?.value || 'all');
+    const rows = Array.from(document.querySelectorAll('#usersTableBody tr'));
+    rows.forEach(tr => {
+      const state = tr.getAttribute('data-state') || 'active';
+      if (value === 'all') { tr.style.display = ''; return; }
+      tr.style.display = (state === value) ? '' : 'none';
+    });
   }
 
   async function setupModal() {
@@ -74,19 +130,28 @@
       const role = document.getElementById('userRole').value;
       const active = document.getElementById('userActive').checked;
 
-      // Upsert en profiles (el usuario debe existir en auth.users para tener id; si no, solo guardamos el perfil por email)
-      const { data: userByEmail } = await supabase
-        .from('profiles').select('id').eq('email', email).maybeSingle();
-      const id = userByEmail?.id || null;
-
-      const { error } = await supabase.from('profiles').upsert({
-        id,
-        email,
-        display_name: displayName,
-        role,
-        active
-      }, { onConflict: 'id' });
-      if (error) { alert(error.message || 'Error al guardar'); return; }
+      // 1) Intentar RPC admin (si el usuario ya existe en Auth)
+      const { data, error } = await supabase.rpc('admin_upsert_profile_by_email', {
+        p_email: email,
+        p_display_name: displayName || null,
+        p_role: role,
+        p_active: active
+      });
+      // 2) Si falla porque no existe en Auth, guardar preferencias y enviar Magic Link
+      if (error && /No existe usuario en Auth/i.test(error.message||'')) {
+        await supabase.from('profile_pending_prefs').upsert({
+          email,
+          display_name: displayName || null,
+          role,
+          active
+        });
+        const { error: mailErr } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin + '/login.html' } });
+        if (mailErr) { alert(mailErr.message || 'No se pudo enviar la invitación'); return; }
+        alert('Invitación enviada por correo. Se aplicarán los permisos al confirmar.');
+      } else if (error) {
+        alert(error.message || 'Error al guardar');
+        return;
+      }
       document.getElementById('userModal')?.querySelector('.btn-close')?.click();
       await loadUsers();
     });
@@ -94,17 +159,44 @@
 
   function wireRowSave() {
     document.addEventListener('click', async (e) => {
-      const btn = e.target.closest('.btn-save-user');
-      if (!btn) return;
-      const tr = btn.closest('tr');
+      const btnSave = e.target.closest('.btn-save-user');
+      const btnResend = e.target.closest('.btn-resend-invite');
+      const btnCancel = e.target.closest('.btn-cancel-invite');
+      if (!btnSave && !btnResend && !btnCancel) return;
+      const tr = (btnSave||btnResend||btnCancel).closest('tr');
       const id = tr?.getAttribute('data-id');
+      const pendingEmail = tr?.getAttribute('data-pending-email');
       const role = tr.querySelector('.user-role').value;
       const active = tr.querySelector('.user-active').checked;
       const email = tr.children[0].textContent.trim();
       const displayName = tr.children[1].textContent.trim();
-      const { error } = await supabase.from('profiles').update({ role, active, display_name: displayName }).eq('id', id);
-      if (error) { alert(error.message || 'Error al actualizar'); return; }
-      toast('Usuario actualizado');
+      if (btnSave) {
+        if (id) {
+          const { error } = await supabase.from('profiles').update({ role, active, display_name: displayName }).eq('id', id);
+          if (error) { alert(error.message || 'Error al actualizar'); return; }
+        } else if (pendingEmail) {
+          const { error } = await supabase.from('profile_pending_prefs').upsert({
+            email: pendingEmail,
+            display_name: displayName || null,
+            role,
+            active
+          });
+          if (error) { alert(error.message || 'Error al actualizar'); return; }
+        }
+        toast('Usuario actualizado');
+      }
+      if (btnResend && pendingEmail) {
+        const { error: mailErr } = await supabase.auth.signInWithOtp({ email: pendingEmail, options: { emailRedirectTo: window.location.origin + '/login.html' } });
+        if (mailErr) { alert(mailErr.message || 'No se pudo reenviar'); return; }
+        toast('Invitación reenviada');
+      }
+      if (btnCancel && pendingEmail) {
+        if (!confirm('¿Cancelar la invitación pendiente?')) return;
+        const { error } = await supabase.from('profile_pending_prefs').delete().eq('email', pendingEmail);
+        if (error) { alert(error.message || 'No se pudo cancelar'); return; }
+        tr.remove();
+        toast('Invitación cancelada');
+      }
     });
   }
 
@@ -115,6 +207,10 @@
     await loadUsers();
     await setupModal();
     wireRowSave();
+    const filter = document.getElementById('filterStatus');
+    if (filter) {
+      filter.addEventListener('change', applyFilter);
+    }
   });
 })();
 

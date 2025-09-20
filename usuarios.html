@@ -12,7 +12,16 @@
   <main class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2 class="mb-0">Usuarios</h2>
-      <div class="d-flex gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <div class="input-group input-group-sm" style="width: 220px;">
+          <label class="input-group-text" for="filterStatus"><i class="fas fa-filter"></i></label>
+          <select class="form-select" id="filterStatus">
+            <option value="all" selected>Todos</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+            <option value="pending">Pendientes</option>
+          </select>
+        </div>
         <a href="index.html" class="btn btn-outline-secondary">
           <i class="fas fa-arrow-left me-2"></i>Volver
         </a>
@@ -31,6 +40,7 @@
                 <th>Nombre</th>
                 <th>Rol</th>
                 <th>Activo</th>
+                <th>Estado</th>
                 <th>Creado</th>
                 <th class="text-center">Acciones</th>
               </tr>
