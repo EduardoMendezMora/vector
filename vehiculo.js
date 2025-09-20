@@ -291,6 +291,10 @@
       return;
     }
     renderInfo(data);
+    const tasksBtn = document.getElementById('vehTasksBtn');
+    if (tasksBtn) {
+      tasksBtn.href = 'tareas.html?vehiculo_id=' + encodeURIComponent(data.id);
+    }
     attachLogModal(data);
     await loadLog(data.id);
 
