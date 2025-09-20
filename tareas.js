@@ -1,0 +1,171 @@
+// Tareas - listar, crear y asignar múltiples responsables
+(function() {
+  function setNotice(html, type = 'warning') {
+    const box = document.getElementById('tasksNotice');
+    if (!box) return;
+    if (!html) { box.innerHTML = ''; return; }
+    const cls = type === 'danger' ? 'alert-danger' : type === 'info' ? 'alert-info' : 'alert-warning';
+    box.innerHTML = '<div class="alert '+cls+' p-2 mb-3">'+ html +'</div>';
+  }
+
+  async function ensureInit() {
+    if (!window.SupabaseConfig?.initialize()) {
+      setNotice('Supabase no inicializado', 'danger');
+      return false;
+    }
+    await window.SupabaseConfig.testConnection();
+    return true;
+  }
+
+  async function loadTasks() {
+    const tbody = document.getElementById('tasksTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>';
+
+    const vehiculoId = (new URLSearchParams(location.search).get('vehiculo_id')) || document.getElementById('filterVehiculo')?.value || '';
+    const estado = document.getElementById('filterEstado')?.value || '';
+    const prioridad = document.getElementById('filterPrioridad')?.value || '';
+    const hasta = document.getElementById('filterHasta')?.value || '';
+
+    let query = supabase.from('v_tasks_with_assignees').select('*').order('created_at', { ascending: false });
+    if (vehiculoId) query = query.eq('vehiculo_id', Number(vehiculoId));
+    if (estado) query = query.eq('status', estado);
+    if (prioridad) query = query.eq('priority', prioridad);
+    if (hasta) query = query.lte('due_date', hasta);
+
+    const { data, error } = await query;
+    if (error) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-danger">'+ (error.message||'Error') +'</td></tr>';
+      return;
+    }
+    tbody.innerHTML = (data||[]).map(t => {
+      const badge = (st => ({
+        pendiente: 'secondary',
+        en_progreso: 'primary',
+        bloqueada: 'warning',
+        terminada: 'success'
+      }[st]||'secondary'))(t.status);
+      const prBadge = (p => ({ baja:'secondary', media:'info', alta:'warning', critica:'danger' }[p]||'secondary'))(t.priority);
+      const due = t.due_date ? new Date(t.due_date).toLocaleDateString() : '';
+      const assignees = Array.isArray(t.assignees) ? t.assignees.length : 0;
+      return `
+        <tr data-id="${t.id}">
+          <td>${t.title||''}</td>
+          <td>${t.vehiculo_id||''}</td>
+          <td><span class="badge bg-dark">${assignees}</span></td>
+          <td><span class="badge bg-${badge}">${t.status}</span></td>
+          <td><span class="badge bg-${prBadge}">${t.priority}</span></td>
+          <td>${due}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-primary btn-edit"><i class="fas fa-pen"></i></button>
+            <button class="btn btn-sm btn-outline-danger btn-delete"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function parseEmails(list) {
+    return (list||'').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  }
+
+  async function upsertAssignees(taskId, emails) {
+    if (!emails.length) return;
+    // Buscar profiles por email
+    const { data: profs, error } = await supabase.from('profiles').select('id,email').in('email', emails);
+    if (error) throw error;
+    const rows = (profs||[]).map(p => ({ task_id: taskId, profile_id: p.id }));
+    if (!rows.length) return;
+    const { error: insErr } = await supabase.from('task_assignees').upsert(rows);
+    if (insErr) throw insErr;
+  }
+
+  function wireFilters() {
+    ['filterEstado','filterPrioridad','filterHasta','filterVehiculo'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', loadTasks);
+    });
+  }
+
+  function wireTable() {
+    document.addEventListener('click', async (e) => {
+      const btnEdit = e.target.closest('.btn-edit');
+      const btnDelete = e.target.closest('.btn-delete');
+      if (!btnEdit && !btnDelete) return;
+      const tr = (btnEdit||btnDelete).closest('tr');
+      const id = tr?.getAttribute('data-id');
+      if (!id) return;
+      if (btnDelete) {
+        if (!confirm('¿Eliminar tarea?')) return;
+        const { error } = await supabase.from('tasks').delete().eq('id', id);
+        if (error) { alert(error.message||'No se pudo eliminar'); return; }
+        await loadTasks();
+        return;
+      }
+      if (btnEdit) {
+        const { data, error } = await supabase.from('tasks').select('*').eq('id', id).maybeSingle();
+        if (error || !data) { alert(error?.message||'No se pudo cargar'); return; }
+        document.getElementById('taskId').value = data.id;
+        document.getElementById('taskTitle').value = data.title||'';
+        document.getElementById('taskVehiculoId').value = data.vehiculo_id||'';
+        document.getElementById('taskDesc').value = data.description||'';
+        document.getElementById('taskStatus').value = data.status||'pendiente';
+        document.getElementById('taskPriority').value = data.priority||'media';
+        document.getElementById('taskDue').value = data.due_date||'';
+        // Cargar asignados
+        const { data: ass } = await supabase.from('task_assignees').select('profile_id, profiles:profile_id(email)').eq('task_id', id);
+        const emails = (ass||[]).map(a => a.profiles?.email).filter(Boolean).join(', ');
+        document.getElementById('taskAssignees').value = emails;
+        new bootstrap.Modal(document.getElementById('taskModal')).show();
+      }
+    });
+  }
+
+  function wireForm() {
+    const form = document.getElementById('taskForm');
+    if (!form) return;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('taskId').value || null;
+      const title = document.getElementById('taskTitle').value.trim();
+      const vehiculoId = document.getElementById('taskVehiculoId').value ? Number(document.getElementById('taskVehiculoId').value) : null;
+      const description = document.getElementById('taskDesc').value.trim();
+      const status = document.getElementById('taskStatus').value;
+      const priority = document.getElementById('taskPriority').value;
+      const due = document.getElementById('taskDue').value || null;
+      const emails = parseEmails(document.getElementById('taskAssignees').value);
+
+      const payload = { vehiculo_id: vehiculoId, title, description, status, priority, due_date: due };
+      let taskId = id;
+      if (id) {
+        const { error } = await supabase.from('tasks').update(payload).eq('id', id);
+        if (error) { alert(error.message||'No se pudo actualizar'); return; }
+        // reset y reasignar
+        await supabase.from('task_assignees').delete().eq('task_id', id);
+        await upsertAssignees(id, emails);
+      } else {
+        // created_by se asigna desde el cliente
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { alert('Sesión requerida'); return; }
+        const { data, error } = await supabase.from('tasks').insert({ ...payload, created_by: user.id }).select('id').single();
+        if (error) { alert(error.message||'No se pudo crear'); return; }
+        taskId = data.id;
+        await upsertAssignees(taskId, emails);
+      }
+      document.querySelector('#taskModal .btn-close')?.click();
+      await loadTasks();
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!(await ensureInit())) return;
+    ['filterVehiculo','filterEstado','filterPrioridad','filterHasta'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', loadTasks);
+    });
+    wireFilters();
+    wireTable();
+    wireForm();
+    await loadTasks();
+  });
+})();
+
+
