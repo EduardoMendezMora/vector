@@ -312,6 +312,87 @@
         await loadAssignedUsers(data.id);
       });
     }
+
+    // --- TAREAS TAB ---
+    const tasksNotice = (html, type='info') => {
+      const el = document.getElementById('vehTasksNotice');
+      if (!el) return;
+      if (!html) { el.innerHTML=''; return; }
+      const cls = type==='danger'?'alert-danger':type==='warning'?'alert-warning':'alert-info';
+      el.innerHTML = '<div class="alert '+cls+' p-2 mb-2">'+html+'</div>';
+    };
+
+    function parseEmails(str){ return (str||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean); }
+
+    async function vehLoadTasks(){
+      const tbody = document.getElementById('vehTasksBody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Cargando...</td></tr>';
+      // Usar vista si está disponible; fallback si no
+      let q = supabase.from('v_tasks_with_assignees').select('*').eq('vehiculo_id', data.id).order('created_at', { ascending: false });
+      let { data: rows, error } = await q;
+      if (error) {
+        const msg = error.message||'';
+        if (/v_tasks_with_assignees|schema cache|relation .* does not exist/i.test(msg)) {
+          const { data: tdata, error: tErr } = await supabase.from('tasks').select('id,title,status,priority,due_date').eq('vehiculo_id', data.id).order('created_at', { ascending:false });
+          if (tErr) { tbody.innerHTML = '<tr><td colspan="5" class="text-danger">'+(tErr.message||'Error')+'</td></tr>'; return; }
+          const ids = (tdata||[]).map(t=>t.id);
+          const counts = new Map();
+          if (ids.length){
+            const { data: asg } = await supabase.from('task_assignees').select('task_id,profile_id').in('task_id', ids);
+            (asg||[]).forEach(a=>counts.set(a.task_id, (counts.get(a.task_id)||0)+1));
+          }
+          rows = (tdata||[]).map(t=>({ ...t, assignees: Array.from({length: counts.get(t.id)||0}) }));
+          tasksNotice('Vista no disponible aún; usando modo compatible. Ejecuta NOTIFY pgrst, \"reload schema\";', 'warning');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-danger">'+(msg||'Error')+'</td></tr>'; return;
+        }
+      }
+      tbody.innerHTML = (rows||[]).map(t=>{
+        const badge = t.status==='terminada'?'success':t.status==='en_progreso'?'primary':t.status==='bloqueada'?'warning':'secondary';
+        const pr = t.priority==='critica'?'danger':t.priority==='alta'?'warning':t.priority==='media'?'info':'secondary';
+        const due = t.due_date ? new Date(t.due_date).toLocaleDateString() : '';
+        const ass = Array.isArray(t.assignees)?t.assignees.length:0;
+        return `<tr>
+          <td>${t.title||''}</td>
+          <td><span class="badge bg-dark">${ass}</span></td>
+          <td><span class="badge bg-${badge}">${t.status}</span></td>
+          <td><span class="badge bg-${pr}">${t.priority}</span></td>
+          <td>${due}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="5" class="text-muted">Sin tareas aún.</td></tr>';
+    }
+
+    document.getElementById('vehNewTaskBtn')?.addEventListener('click', ()=>{
+      const m = new bootstrap.Modal(document.getElementById('vehTaskModal'));
+      m.show();
+    });
+    document.getElementById('vehTaskForm')?.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const title = document.getElementById('vehTaskTitle').value.trim();
+      const description = document.getElementById('vehTaskDesc').value.trim();
+      const status = document.getElementById('vehTaskStatus').value;
+      const priority = document.getElementById('vehTaskPriority').value;
+      const due = document.getElementById('vehTaskDue').value || null;
+      const emails = parseEmails(document.getElementById('vehTaskAssignees').value);
+      if (!title) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { alert('Sesión requerida'); return; }
+      const { data: ins, error: insErr } = await supabase.from('tasks').insert({ vehiculo_id: data.id, title, description, status, priority, due_date: due, created_by: user.id }).select('id').single();
+      if (insErr) { alert(insErr.message||'No se pudo crear'); return; }
+      // asignados
+      if (emails.length){
+        const { data: profs } = await supabase.from('profiles').select('id,email').in('email', emails);
+        const rows = (profs||[]).map(p=>({ task_id: ins.id, profile_id: p.id }));
+        if (rows.length){ await supabase.from('task_assignees').upsert(rows); }
+      }
+      bootstrap.Modal.getInstance(document.getElementById('vehTaskModal'))?.hide();
+      document.getElementById('vehTaskForm').reset();
+      await vehLoadTasks();
+    });
+
+    // cargar tareas al abrir la pestaña
+    document.getElementById('tasks-tab')?.addEventListener('shown.bs.tab', vehLoadTasks);
   }
 
   main();
