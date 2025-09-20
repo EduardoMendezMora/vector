@@ -37,7 +37,14 @@
     const prioridad = document.getElementById('filterPrioridad')?.value || '';
     const hasta = document.getElementById('filterHasta')?.value || '';
 
-    let query = supabase.from('v_tasks_with_assignees').select('*').order('created_at', { ascending: false });
+    let query = supabase
+      .from('tasks')
+      .select(`
+        id, vehiculo_id, title, status, priority, due_date, created_at,
+        vehiculos:vehiculo_id(placa),
+        task_assignees(profiles:profile_id(id,email,display_name))
+      `)
+      .order('created_at', { ascending: false });
     if (vehiculoId) query = query.eq('vehiculo_id', Number(vehiculoId));
     if (estado) query = query.eq('status', estado);
     if (prioridad) query = query.eq('priority', prioridad);
@@ -47,9 +54,9 @@
     let rows = data;
     if (error) {
       const msg = error.message||'';
-      // Fallback si la vista aún no está en el schema cache
-      if (/v_tasks_with_assignees|schema cache|relation .* does not exist/i.test(msg)) {
-        // 1) Traer tareas base
+      // Fallback si la tabla aún no está en el schema cache
+      if (/public.*tasks.*schema cache|relation .* does not exist/i.test(msg)) {
+        // 1) Traer tareas base (sin joins)
         let q2 = supabase.from('tasks').select('id,vehiculo_id,title,status,priority,due_date,created_at').order('created_at', { ascending: false });
         if (vehiculoId) q2 = q2.eq('vehiculo_id', Number(vehiculoId));
         if (estado) q2 = q2.eq('status', estado);
@@ -64,14 +71,22 @@
           tbody.innerHTML = '<tr><td colspan="7" class="text-danger">'+ (msg2||'Error') +'</td></tr>';
           return;
         }
-        // 2) Traer asignaciones y contar
+        // 2) Traer asignaciones (para mostrar cantidad y nombres por separado)
         const ids = (tdata||[]).map(t => t.id);
         let counts = new Map();
+        let names = new Map();
         if (ids.length) {
-          const { data: asg } = await supabase.from('task_assignees').select('task_id,profile_id').in('task_id', ids);
-          (asg||[]).forEach(a => counts.set(a.task_id, (counts.get(a.task_id)||0)+1));
+          const { data: asg } = await supabase
+            .from('task_assignees')
+            .select('task_id, profiles:profile_id(email,display_name)')
+            .in('task_id', ids);
+          (asg||[]).forEach(a => {
+            counts.set(a.task_id, (counts.get(a.task_id)||0)+1);
+            const label = a.profiles?.display_name || a.profiles?.email || '';
+            names.set(a.task_id, [...(names.get(a.task_id)||[]), label]);
+          });
         }
-        rows = (tdata||[]).map(t => ({ ...t, assignees: Array.from({ length: counts.get(t.id)||0 }).map(() => null) }));
+        rows = (tdata||[]).map(t => ({ ...t, __assigneeCount: counts.get(t.id)||0, __assigneeNames: names.get(t.id)||[], vehiculos: { placa: t.vehiculos?.placa } }));
         setNotice('Actualicé la lista usando un modo compatible. Puedes ejecutar: NOTIFY pgrst, \"reload schema\"; para habilitar la vista.', 'info');
       } else {
         tbody.innerHTML = '<tr><td colspan="7" class="text-danger">'+ (msg||'Error') +'</td></tr>';
@@ -87,12 +102,20 @@
       }[st]||'secondary'))(t.status);
       const prBadge = (p => ({ baja:'secondary', media:'info', alta:'warning', critica:'danger' }[p]||'secondary'))(t.priority);
       const due = t.due_date ? new Date(t.due_date).toLocaleDateString() : '';
-      const assignees = Array.isArray(t.assignees) ? t.assignees.length : 0;
+      const placa = t.vehiculos?.placa || '';
+      // si vino con joins
+      const namesFromJoin = Array.isArray(t.task_assignees)
+        ? (t.task_assignees||[]).map(a => a.profiles?.display_name || a.profiles?.email).filter(Boolean)
+        : (t.__assigneeNames||[]);
+      const assignees = namesFromJoin.length || t.__assigneeCount || 0;
+      const assignedHtml = namesFromJoin.length
+        ? namesFromJoin.map(n => `<span class="badge bg-secondary me-1">${n}</span>`).join('')
+        : '<span class="badge bg-light text-muted">Sin asignados</span>';
       return `
         <tr data-id="${t.id}">
           <td>${t.title||''}</td>
-          <td>${t.vehiculo_id||''}</td>
-          <td><span class="badge bg-dark">${assignees}</span></td>
+          <td>${placa || t.vehiculo_id || ''}</td>
+          <td>${assignedHtml}</td>
           <td><span class="badge bg-${badge}">${t.status}</span></td>
           <td><span class="badge bg-${prBadge}">${t.priority}</span></td>
           <td>${due}</td>

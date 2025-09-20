@@ -334,7 +334,11 @@
       if (error) {
         const msg = error.message||'';
         if (/v_tasks_with_assignees|schema cache|relation .* does not exist/i.test(msg)) {
-          const { data: tdata, error: tErr } = await supabase.from('tasks').select('id,title,status,priority,due_date').eq('vehiculo_id', data.id).order('created_at', { ascending:false });
+          const { data: tdata, error: tErr } = await supabase
+            .from('tasks')
+            .select('id,title,status,priority,due_date, task_assignees(profiles:profile_id(email,display_name))')
+            .eq('vehiculo_id', data.id)
+            .order('created_at', { ascending:false });
           if (tErr) {
             const msg2 = tErr.message||'';
             if (/public.*tasks.*schema cache|relation .* does not exist/i.test(msg2)) {
@@ -357,10 +361,11 @@
         const badge = t.status==='terminada'?'success':t.status==='en_progreso'?'primary':t.status==='bloqueada'?'warning':'secondary';
         const pr = t.priority==='critica'?'danger':t.priority==='alta'?'warning':t.priority==='media'?'info':'secondary';
         const due = t.due_date ? new Date(t.due_date).toLocaleDateString() : '';
-        const ass = Array.isArray(t.assignees)?t.assignees.length:0;
+        const names = Array.isArray(t.task_assignees) ? (t.task_assignees||[]).map(a=>a.profiles?.display_name || a.profiles?.email).filter(Boolean) : [];
+        const ass = names.length;
         return `<tr data-id="${t.id}">
           <td>${t.title||''}</td>
-          <td><span class="badge bg-dark">${ass}</span></td>
+          <td>${ass ? names.map(n=>`<span class=\"badge bg-secondary me-1\">${n}</span>`).join('') : '<span class="badge bg-light text-muted">Sin asignados</span>'}</td>
           <td><span class="badge bg-${badge}">${t.status}</span></td>
           <td><span class="badge bg-${pr}">${t.priority}</span></td>
           <td>${due}</td>
