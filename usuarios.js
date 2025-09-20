@@ -7,6 +7,14 @@
     try { console.log(msg); } catch (_) {}
   }
 
+  function setNotice(html, type = 'warning') {
+    const box = document.getElementById('usersNotice');
+    if (!box) return;
+    if (!html) { box.innerHTML = ''; return; }
+    const cls = type === 'danger' ? 'alert-danger' : type === 'info' ? 'alert-info' : 'alert-warning';
+    box.innerHTML = '<div class="alert '+cls+' p-2 mb-3">'+ html +'</div>';
+  }
+
   async function ensureInit() {
     if (!window.SupabaseConfig?.initialize()) {
       toast('Supabase no inicializado');
@@ -37,10 +45,17 @@
       supabase.from('profiles').select('id,email,display_name,role,active,created_at').order('created_at', { ascending: false }),
       supabase.from('profile_pending_prefs').select('email,display_name,role,active,created_at').order('created_at', { ascending: false })
     ]);
-    if (profilesRes.error || pendingRes.error) {
-      const msg = (profilesRes.error||pendingRes.error).message || 'Error';
+    if (profilesRes.error) {
+      const msg = (profilesRes.error).message || 'Error';
       tbody.innerHTML = '<tr><td colspan="6" class="text-danger">'+ msg +'</td></tr>';
       return;
+    }
+
+    const pendingNotInstalled = !!(pendingRes.error && /profile_pending_prefs|schema cache|relation .* does not exist/i.test(pendingRes.error.message||''));
+    if (pendingNotInstalled) {
+      setNotice('Las invitaciones pendientes no están habilitadas. Ejecuta 14_profiles_pending_invites.sql en Supabase.');
+    } else {
+      setNotice('');
     }
 
     const rowsProfiles = (profilesRes.data||[]).map(p => {
@@ -73,7 +88,7 @@
       `;
     }).join('');
 
-    const rowsPending = (pendingRes.data||[]).map(p => {
+    const rowsPending = (pendingNotInstalled ? [] : (pendingRes.data||[])).map(p => {
       const created = new Date(p.created_at).toLocaleString();
       const chk = p.active ? 'checked' : '';
       return `
@@ -148,6 +163,18 @@
         const { error: mailErr } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin + '/login.html' } });
         if (mailErr) { alert(mailErr.message || 'No se pudo enviar la invitación'); return; }
         alert('Invitación enviada por correo. Se aplicarán los permisos al confirmar.');
+      } else if (error && /admin_upsert_profile_by_email/i.test(error.message||'')) {
+        // Si la función RPC aún no existe, caemos al modo invitación automática
+        await supabase.from('profile_pending_prefs').upsert({
+          email,
+          display_name: displayName || null,
+          role,
+          active
+        });
+        const { error: mailErr } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin + '/login.html' } });
+        if (mailErr) { alert(mailErr.message || 'No se pudo enviar la invitación'); return; }
+        setNotice('La función admin_upsert_profile_by_email no está instalada. Ejecuta 13_profiles_admin_upsert.sql para activarla.', 'info');
+        alert('Invitación enviada. Cuando el usuario confirme, se aplicarán los permisos.');
       } else if (error) {
         alert(error.message || 'Error al guardar');
         return;
