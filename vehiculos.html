@@ -168,6 +168,7 @@
                                                 <th>Estado</th>
                                                 <th>Prioridad</th>
                                                 <th>Vence</th>
+                                                <th class="text-center">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody id="vehTasksBody"></tbody>
@@ -276,8 +277,9 @@
                             </div>
                         </div>
                         <div class="mt-3">
-                            <label class="form-label fw-semibold">Asignados (emails, separados por coma)</label>
-                            <input type="text" class="form-control" id="vehTaskAssignees" placeholder="user@dominio.com, otro@dominio.com">
+                            <label class="form-label fw-semibold">Asignados</label>
+                            <select id="vehTaskAssignees" class="form-select" multiple size="6"></select>
+                            <div class="form-text">Mantén Ctrl/⌘ para seleccionar múltiples usuarios</div>
                         </div>
                     </div>
                     <div class="modal-footer bg-light">

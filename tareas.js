@@ -17,6 +17,16 @@
     return true;
   }
 
+  let cachedUsers = [];
+  async function loadAssignableUsers() {
+    const select = document.getElementById('taskAssignees');
+    if (!select) return;
+    const { data, error } = await supabase.from('profiles').select('id,email,display_name,active').eq('active', true).order('email', { ascending: true });
+    if (error) { select.innerHTML = '<option>Error cargando usuarios</option>'; return; }
+    cachedUsers = data||[];
+    select.innerHTML = (cachedUsers).map(u => `<option value="${u.id}">${u.email}${u.display_name?(' — '+u.display_name):''}</option>`).join('');
+  }
+
   async function loadTasks() {
     const tbody = document.getElementById('tasksTableBody');
     if (!tbody) return;
@@ -95,16 +105,14 @@
     }).join('');
   }
 
-  function parseEmails(list) {
-    return (list||'').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  function selectedIdsFrom(selectId){
+    const sel = document.getElementById(selectId);
+    return Array.from(sel?.selectedOptions||[]).map(o=>o.value);
   }
 
-  async function upsertAssignees(taskId, emails) {
-    if (!emails.length) return;
-    // Buscar profiles por email
-    const { data: profs, error } = await supabase.from('profiles').select('id,email').in('email', emails);
-    if (error) throw error;
-    const rows = (profs||[]).map(p => ({ task_id: taskId, profile_id: p.id }));
+  async function upsertAssignees(taskId, profileIds) {
+    if (!profileIds.length) return;
+    const rows = profileIds.map(pid => ({ task_id: taskId, profile_id: pid }));
     if (!rows.length) return;
     const { error: insErr } = await supabase.from('task_assignees').upsert(rows);
     if (insErr) throw insErr;
@@ -162,7 +170,7 @@
       const status = document.getElementById('taskStatus').value;
       const priority = document.getElementById('taskPriority').value;
       const due = document.getElementById('taskDue').value || null;
-      const emails = parseEmails(document.getElementById('taskAssignees').value);
+      const profileIds = selectedIdsFrom('taskAssignees');
 
       const payload = { vehiculo_id: vehiculoId, title, description, status, priority, due_date: due };
       let taskId = id;
@@ -171,7 +179,7 @@
         if (error) { alert(error.message||'No se pudo actualizar'); return; }
         // reset y reasignar
         await supabase.from('task_assignees').delete().eq('task_id', id);
-        await upsertAssignees(id, emails);
+        await upsertAssignees(id, profileIds);
       } else {
         // created_by se asigna desde el cliente
         const { data: { user } } = await supabase.auth.getUser();
@@ -179,7 +187,7 @@
         const { data, error } = await supabase.from('tasks').insert({ ...payload, created_by: user.id }).select('id').single();
         if (error) { alert(error.message||'No se pudo crear'); return; }
         taskId = data.id;
-        await upsertAssignees(taskId, emails);
+        await upsertAssignees(taskId, profileIds);
       }
       document.querySelector('#taskModal .btn-close')?.click();
       await loadTasks();
@@ -188,6 +196,7 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (!(await ensureInit())) return;
+    await loadAssignableUsers();
     ['filterVehiculo','filterEstado','filterPrioridad','filterHasta'].forEach(id => {
       document.getElementById(id)?.addEventListener('change', loadTasks);
     });

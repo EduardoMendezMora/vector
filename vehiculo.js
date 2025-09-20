@@ -358,12 +358,16 @@
         const pr = t.priority==='critica'?'danger':t.priority==='alta'?'warning':t.priority==='media'?'info':'secondary';
         const due = t.due_date ? new Date(t.due_date).toLocaleDateString() : '';
         const ass = Array.isArray(t.assignees)?t.assignees.length:0;
-        return `<tr>
+        return `<tr data-id="${t.id}">
           <td>${t.title||''}</td>
           <td><span class="badge bg-dark">${ass}</span></td>
           <td><span class="badge bg-${badge}">${t.status}</span></td>
           <td><span class="badge bg-${pr}">${t.priority}</span></td>
           <td>${due}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-primary btn-edit-task"><i class="fas fa-pen"></i></button>
+            <button class="btn btn-sm btn-outline-danger btn-del-task"><i class="fas fa-trash"></i></button>
+          </td>
         </tr>`;
       }).join('') || '<tr><td colspan="5" class="text-muted">Sin tareas aún.</td></tr>';
     }
@@ -372,6 +376,15 @@
       const m = new bootstrap.Modal(document.getElementById('vehTaskModal'));
       m.show();
     });
+    // cargar usuarios al abrir modal
+    async function loadVehAssignableUsers(){
+      const select = document.getElementById('vehTaskAssignees');
+      if (!select) return;
+      const { data, error } = await supabase.from('profiles').select('id,email,display_name,active').eq('active', true).order('email', { ascending: true });
+      if (error) { select.innerHTML = '<option>Error</option>'; return; }
+      select.innerHTML = (data||[]).map(u=>`<option value="${u.id}">${u.email}${u.display_name?(' — '+u.display_name):''}</option>`).join('');
+    }
+    document.getElementById('vehTaskModal')?.addEventListener('show.bs.modal', loadVehAssignableUsers);
     document.getElementById('vehTaskForm')?.addEventListener('submit', async (e)=>{
       e.preventDefault();
       const title = document.getElementById('vehTaskTitle').value.trim();
@@ -379,21 +392,75 @@
       const status = document.getElementById('vehTaskStatus').value;
       const priority = document.getElementById('vehTaskPriority').value;
       const due = document.getElementById('vehTaskDue').value || null;
-      const emails = parseEmails(document.getElementById('vehTaskAssignees').value);
+      const sel = Array.from(document.getElementById('vehTaskAssignees')?.selectedOptions||[]).map(o=>o.value);
       if (!title) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { alert('Sesión requerida'); return; }
       const { data: ins, error: insErr } = await supabase.from('tasks').insert({ vehiculo_id: data.id, title, description, status, priority, due_date: due, created_by: user.id }).select('id').single();
       if (insErr) { alert(insErr.message||'No se pudo crear'); return; }
       // asignados
-      if (emails.length){
-        const { data: profs } = await supabase.from('profiles').select('id,email').in('email', emails);
-        const rows = (profs||[]).map(p=>({ task_id: ins.id, profile_id: p.id }));
-        if (rows.length){ await supabase.from('task_assignees').upsert(rows); }
+      if (sel.length){
+        const rows = sel.map(pid=>({ task_id: ins.id, profile_id: pid }));
+        await supabase.from('task_assignees').upsert(rows);
       }
       bootstrap.Modal.getInstance(document.getElementById('vehTaskModal'))?.hide();
       document.getElementById('vehTaskForm').reset();
       await vehLoadTasks();
+    });
+
+    // editar/eliminar
+    document.addEventListener('click', async (e)=>{
+      const editBtn = e.target.closest('.btn-edit-task');
+      const delBtn = e.target.closest('.btn-del-task');
+      if (!editBtn && !delBtn) return;
+      const tr = (editBtn||delBtn).closest('tr');
+      const taskId = tr?.getAttribute('data-id');
+      if (!taskId) return;
+      if (delBtn) {
+        if (!confirm('¿Eliminar tarea?')) return;
+        const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+        if (error) { alert(error.message||'No se pudo eliminar'); return; }
+        await vehLoadTasks();
+        return;
+      }
+      if (editBtn) {
+        const { data: t, error } = await supabase.from('tasks').select('*').eq('id', taskId).maybeSingle();
+        if (error||!t) { alert(error?.message||'No se pudo cargar'); return; }
+        document.getElementById('vehTaskTitle').value = t.title||'';
+        document.getElementById('vehTaskDesc').value = t.description||'';
+        document.getElementById('vehTaskStatus').value = t.status||'pendiente';
+        document.getElementById('vehTaskPriority').value = t.priority||'media';
+        document.getElementById('vehTaskDue').value = t.due_date||'';
+        await loadVehAssignableUsers();
+        const { data: asg } = await supabase.from('task_assignees').select('profile_id').eq('task_id', taskId);
+        const select = document.getElementById('vehTaskAssignees');
+        const ids = (asg||[]).map(a=>a.profile_id);
+        Array.from(select.options).forEach(o=>{ o.selected = ids.includes(o.value); });
+        const m = new bootstrap.Modal(document.getElementById('vehTaskModal'));
+        m.show();
+        // Reemplazar submit temporalmente para update
+        const form = document.getElementById('vehTaskForm');
+        const handler = async (ev)=>{
+          ev.preventDefault();
+          const payload = {
+            title: document.getElementById('vehTaskTitle').value.trim(),
+            description: document.getElementById('vehTaskDesc').value.trim(),
+            status: document.getElementById('vehTaskStatus').value,
+            priority: document.getElementById('vehTaskPriority').value,
+            due_date: document.getElementById('vehTaskDue').value || null
+          };
+          const { error: upErr } = await supabase.from('tasks').update(payload).eq('id', taskId);
+          if (upErr) { alert(upErr.message||'No se pudo actualizar'); return; }
+          await supabase.from('task_assignees').delete().eq('task_id', taskId);
+          const selected = Array.from(document.getElementById('vehTaskAssignees').selectedOptions).map(o=>o.value);
+          if (selected.length){ await supabase.from('task_assignees').upsert(selected.map(pid=>({ task_id: taskId, profile_id: pid }))); }
+          bootstrap.Modal.getInstance(document.getElementById('vehTaskModal'))?.hide();
+          form.removeEventListener('submit', handler);
+          form.reset();
+          await vehLoadTasks();
+        };
+        form.addEventListener('submit', handler);
+      }
     });
 
     // cargar tareas al abrir la pestaña
