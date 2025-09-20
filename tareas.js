@@ -34,11 +34,37 @@
     if (hasta) query = query.lte('due_date', hasta);
 
     const { data, error } = await query;
+    let rows = data;
     if (error) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-danger">'+ (error.message||'Error') +'</td></tr>';
-      return;
+      const msg = error.message||'';
+      // Fallback si la vista aún no está en el schema cache
+      if (/v_tasks_with_assignees|schema cache|relation .* does not exist/i.test(msg)) {
+        // 1) Traer tareas base
+        let q2 = supabase.from('tasks').select('id,vehiculo_id,title,status,priority,due_date,created_at').order('created_at', { ascending: false });
+        if (vehiculoId) q2 = q2.eq('vehiculo_id', Number(vehiculoId));
+        if (estado) q2 = q2.eq('status', estado);
+        if (prioridad) q2 = q2.eq('priority', prioridad);
+        if (hasta) q2 = q2.lte('due_date', hasta);
+        const { data: tdata, error: tErr } = await q2;
+        if (tErr) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-danger">'+ (tErr.message||'Error') +'</td></tr>';
+          return;
+        }
+        // 2) Traer asignaciones y contar
+        const ids = (tdata||[]).map(t => t.id);
+        let counts = new Map();
+        if (ids.length) {
+          const { data: asg } = await supabase.from('task_assignees').select('task_id,profile_id').in('task_id', ids);
+          (asg||[]).forEach(a => counts.set(a.task_id, (counts.get(a.task_id)||0)+1));
+        }
+        rows = (tdata||[]).map(t => ({ ...t, assignees: Array.from({ length: counts.get(t.id)||0 }).map(() => null) }));
+        setNotice('Actualicé la lista usando un modo compatible. Puedes ejecutar: NOTIFY pgrst, \"reload schema\"; para habilitar la vista.', 'info');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-danger">'+ (msg||'Error') +'</td></tr>';
+        return;
+      }
     }
-    tbody.innerHTML = (data||[]).map(t => {
+    tbody.innerHTML = (rows||[]).map(t => {
       const badge = (st => ({
         pendiente: 'secondary',
         en_progreso: 'primary',
