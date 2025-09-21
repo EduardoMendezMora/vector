@@ -389,7 +389,7 @@
       if (!select) return;
       const { data, error } = await supabase.from('profiles').select('id,email,display_name,active').eq('active', true).order('email', { ascending: true });
       if (error) { select.innerHTML = '<option>Error</option>'; return; }
-      select.innerHTML = '<option value="">Sin responsable</option>' + (data||[]).map(u=>`<option value="${u.id}">${u.email}${u.display_name?(' — '+u.display_name):''}</option>`).join('');
+      select.innerHTML = (data||[]).map(u=>`<option value="${u.id}">${u.email}${u.display_name?(' — '+u.display_name):''}</option>`).join('');
     }
     document.getElementById('vehTaskModal')?.addEventListener('show.bs.modal', loadVehAssignableUsers);
     document.getElementById('vehTaskForm')?.addEventListener('submit', async (e)=>{
@@ -400,7 +400,7 @@
       const status = document.getElementById('vehTaskStatus').value;
       const priority = document.getElementById('vehTaskPriority').value;
       const due = document.getElementById('vehTaskDue').value || null;
-      const sel = (document.getElementById('vehTaskAssignees')?.value ? [document.getElementById('vehTaskAssignees').value] : []);
+      const sel = Array.from(document.getElementById('vehTaskAssignees')?.selectedOptions||[]).map(o=>o.value);
       if (!title) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { alert('Sesión requerida'); return; }
@@ -450,9 +450,10 @@
         document.getElementById('vehTaskPriority').value = t.priority||'media';
         document.getElementById('vehTaskDue').value = t.due_date||'';
         await loadVehAssignableUsers();
-        const { data: asg } = await supabase.from('task_assignees').select('profile_id').eq('task_id', taskId).limit(1);
+        const { data: asg } = await supabase.from('task_assignees').select('profile_id').eq('task_id', taskId);
         const select = document.getElementById('vehTaskAssignees');
-        select.value = (asg && asg[0]) ? asg[0].profile_id : '';
+        const ids = (asg||[]).map(a=>a.profile_id);
+        Array.from(select.options).forEach(o=>{ o.selected = ids.includes(o.value); });
         const m = new bootstrap.Modal(document.getElementById('vehTaskModal'));
         m.show();
         // Ya no reemplazamos el submit; el handler general detecta si hay id para actualizar
