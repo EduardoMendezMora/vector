@@ -216,20 +216,12 @@
                                     <div class="col-auto">
                                         <select class="form-select" id="partsStatusFilter">
                                             <option value="">Todos</option>
-                                            <option value="solicitado">Solicitado</option>
-                                            <option value="aprobado">Aprobado</option>
-                                            <option value="comprado">Comprado</option>
-                                            <option value="recibido">Recibido</option>
-                                            <option value="instalado">Instalado</option>
-                                            <option value="rechazado">Rechazado</option>
-                                            <option value="cancelado">Cancelado</option>
+                                            <option value="pendiente">Pendiente</option>
+                                            <option value="terminado">Terminado</option>
                                         </select>
                                     </div>
                                     <div class="col-auto">
-                                        <input type="text" class="form-control" id="partsSupplierFilter" placeholder="Proveedor">
-                                    </div>
-                                    <div class="col-auto">
-                                        <input type="text" class="form-control" id="partsQuery" placeholder="Buscar repuesto">
+                                        <input type="text" class="form-control" id="partsQuery" placeholder="Buscar nombre o SKU">
                                     </div>
                                 </div>
                                 <div class="table-responsive">
@@ -237,12 +229,8 @@
                                         <thead class="table-light">
                                             <tr>
                                                 <th>Repuesto</th>
-                                                <th>Proveedor</th>
-                                                <th class="text-end">Cant.</th>
-                                                <th>Unidad</th>
-                                                <th class="text-end">Precio</th>
-                                                <th>Moneda</th>
-                                                <th>Necesario</th>
+                                                <th>SKU</th>
+                                                <th>Orientación</th>
                                                 <th>Estado</th>
                                                 <th class="text-center">Acciones</th>
                                             </tr>
@@ -250,7 +238,7 @@
                                         <tbody id="partsBody"></tbody>
                                         <tfoot>
                                             <tr>
-                                                <td colspan="9" class="text-end text-muted" id="partsTotals"></td>
+                                                <td colspan="5" class="text-end text-muted" id="partsTotals"></td>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -319,68 +307,41 @@
                 <form id="partForm">
                     <div class="modal-body">
                         <input type="hidden" id="partId">
-                        <div class="mb-2">
+                        <div class="mb-3">
                             <label class="form-label fw-semibold">Nombre del repuesto</label>
                             <input type="text" id="partName" class="form-control" required>
                         </div>
-                        <div class="row g-2">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Marca</label>
-                                <input type="text" id="partBrand" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">SKU</label>
+                                <label class="form-label fw-semibold">SKU del Fabricante</label>
                                 <input type="text" id="partSku" class="form-control">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Cantidad</label>
-                                <input type="number" id="partQty" class="form-control" step="0.01" min="0.01" value="1">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-semibold">Unidad</label>
-                                <input type="text" id="partUnit" class="form-control" value="pz">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Precio</label>
-                                <input type="number" id="partPrice" class="form-control" step="0.01" min="0">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-semibold">Moneda</label>
-                                <input type="text" id="partCurrency" class="form-control" value="CRC">
-                            </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Proveedor</label>
-                                <input type="text" id="partSupplier" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Necesario para</label>
-                                <input type="date" id="partNeededBy" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Prioridad</label>
-                                <select id="partPriority" class="form-select">
-                                    <option value="baja">Baja</option>
-                                    <option value="media" selected>Media</option>
-                                    <option value="alta">Alta</option>
-                                    <option value="critica">Crítica</option>
+                                <label class="form-label fw-semibold">Orientación</label>
+                                <select id="partSides" class="form-select" multiple>
+                                    <option value="izquierda">Izquierda</option>
+                                    <option value="derecha">Derecha</option>
+                                    <option value="delantera">Delantera</option>
+                                    <option value="atras">Atrás</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Estado</label>
                                 <select id="partStatus" class="form-select">
-                                    <option value="solicitado" selected>Solicitado</option>
-                                    <option value="aprobado">Aprobado</option>
-                                    <option value="comprado">Comprado</option>
-                                    <option value="recibido">Recibido</option>
-                                    <option value="instalado">Instalado</option>
-                                    <option value="rechazado">Rechazado</option>
-                                    <option value="cancelado">Cancelado</option>
+                                    <option value="pendiente" selected>Pendiente</option>
+                                    <option value="terminado">Terminado</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="mt-2">
-                            <label class="form-label fw-semibold">Notas</label>
-                            <textarea id="partNotes" class="form-control" rows="2"></textarea>
+                        <hr>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Comentario (opcional)</label>
+                            <textarea id="partComment" class="form-control" rows="2" placeholder="Escribe un comentario..."></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Adjuntos (imágenes, videos, audios, archivos)</label>
+                            <input type="file" id="partFiles" class="form-control" multiple>
+                            <div class="form-text">Al crear, debes incluir al menos un comentario o un archivo.</div>
                         </div>
                     </div>
                     <div class="modal-footer bg-light">

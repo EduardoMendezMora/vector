@@ -35,31 +35,21 @@
       const html = (rows||[]).map(r=>{
         return `<tr data-id="${r.id}">
           <td>${r.part_name||''}</td>
-          <td>${r.supplier||''}</td>
-          <td class="text-end">${Number(r.qty||1).toFixed(2)}</td>
-          <td>${r.unit||''}</td>
-          <td class="text-end">${r.price!=null? Number(r.price).toLocaleString():''}</td>
-          <td>${r.currency||''}</td>
-          <td>${r.needed_by? new Date(r.needed_by).toLocaleDateString():''}</td>
+          <td>${r.manufacturer_sku||''}</td>
+          <td>${Array.isArray(r.sides)? r.sides.join(', '): ''}</td>
           <td><span class="badge bg-${badge(r.status)}">${r.status}</span></td>
           <td class="text-center">
             <button class="btn btn-sm btn-outline-primary btn-edit-part"><i class="fas fa-pen"></i></button>
             <button class="btn btn-sm btn-outline-danger btn-del-part"><i class="fas fa-trash"></i></button>
-            <div class="btn-group btn-group-sm ms-1" role="group">
-              <button class="btn btn-outline-secondary btn-state" data-state="aprobado">Aprobar</button>
-              <button class="btn btn-outline-secondary btn-state" data-state="comprado">Comprar</button>
-              <button class="btn btn-outline-secondary btn-state" data-state="recibido">Recibir</button>
-              <button class="btn btn-outline-secondary btn-state" data-state="instalado">Instalar</button>
-            </div>
+            <button class="btn btn-sm btn-outline-secondary btn-state" data-state="pendiente">Pendiente</button>
+            <button class="btn btn-sm btn-success btn-state" data-state="terminado">Terminar</button>
           </td>
         </tr>`;
       }).join('');
       tbody.innerHTML = html || '<tr><td colspan="9" class="text-muted">Sin repuestos.</td></tr>';
       // Totales
-      const total = (rows||[]).reduce((acc, r)=> acc + (Number(r.price||0)*Number(r.qty||1)), 0);
-      const currency = (rows&&rows[0]?.currency)||'CRC';
       const totalsEl = document.getElementById('partsTotals');
-      if (totalsEl) totalsEl.textContent = rows?.length ? `Ítems: ${rows.length} — Total estimado: ${total.toLocaleString()} ${currency}` : '';
+      if (totalsEl) totalsEl.textContent = rows?.length ? `Ítems: ${rows.length}` : '';
     }
 
     document.getElementById('parts-tab')?.addEventListener('shown.bs.tab', ()=> loadParts(
@@ -91,26 +81,44 @@
       const payload = {
         vehiculo_id: Number(idParam),
         part_name: document.getElementById('partName').value.trim(),
-        brand: document.getElementById('partBrand').value.trim()||null,
-        sku: document.getElementById('partSku').value.trim()||null,
-        qty: Number(document.getElementById('partQty').value||1),
-        unit: document.getElementById('partUnit').value.trim()||'pz',
-        price: document.getElementById('partPrice').value? Number(document.getElementById('partPrice').value): null,
-        currency: document.getElementById('partCurrency').value.trim()||'CRC',
-        supplier: document.getElementById('partSupplier').value.trim()||null,
-        needed_by: document.getElementById('partNeededBy').value||null,
-        priority: document.getElementById('partPriority').value,
+        manufacturer_sku: document.getElementById('partSku').value.trim()||null,
+        sides: Array.from(document.getElementById('partSides').selectedOptions || []).map(o=>o.value),
         status: document.getElementById('partStatus').value,
-        notes: document.getElementById('partNotes').value.trim()||null,
         created_by: user.id
       };
+      // Validación mínima: comentario o archivo al crear
+      const isCreate = !document.getElementById('partId').value;
+      const textComment = document.getElementById('partComment').value.trim();
+      const files = document.getElementById('partFiles').files;
+      if (isCreate && !textComment && (!files || files.length===0)) { alert('Agrega un comentario o adjunta al menos un archivo.'); return; }
       const partId = document.getElementById('partId').value;
       if (partId) {
         const { error } = await supabase.from('parts_requests').update(payload).eq('id', partId);
         if (error) { alert(error.message||'No se pudo guardar'); return; }
       } else {
-        const { error } = await supabase.from('parts_requests').insert(payload);
+        const { data: created, error } = await supabase.from('parts_requests').insert(payload).select('id').single();
         if (error) { alert(error.message||'No se pudo crear'); return; }
+        // Crear comentario de texto
+        if (textComment) {
+          await supabase.from('part_entries').insert({ part_id: created.id, author_id: user.id, entry_type: 'text', content: textComment });
+        }
+        // Subir archivos (si existe bucket 'parts')
+        if (files && files.length) {
+          const now = Date.now();
+          for (let i=0; i<files.length; i++) {
+            const f = files[i];
+            const path = `parts/${created.id}/${now}-${encodeURIComponent(f.name)}`;
+            try {
+              const up = await supabase.storage.from('parts').upload(path, f, { upsert: false });
+              if (!up.error) {
+                const { data: pub } = supabase.storage.from('parts').getPublicUrl(path);
+                const mime = (f.type||'').toLowerCase();
+                const type = mime.startsWith('image')?'image': mime.startsWith('video')?'video': mime.startsWith('audio')?'audio':'file';
+                await supabase.from('part_entries').insert({ part_id: created.id, author_id: user.id, entry_type: type, url: pub.publicUrl });
+              }
+            } catch(_) { /* omitimos archivos que fallen */ }
+          }
+        }
       }
       bootstrap.Modal.getInstance(document.getElementById('partModal'))?.hide();
       e.target.reset();

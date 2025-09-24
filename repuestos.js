@@ -8,11 +8,11 @@
     const body = document.getElementById(isPending? 'ppBody':'histBody');
     if (!body) return;
     body.innerHTML = '<tr><td colspan="9" class="text-muted">Cargando...</td></tr>';
-    let q = supabase.from('parts_requests').select('*, vehiculos:vehiculo_id(placa)').order('created_at', { ascending:false });
-    if (isPending) q = q.in('status', ['solicitado','aprobado','comprado']); else q = q.in('status', ['recibido','instalado','cancelado','rechazado']);
+    let q = supabase.from('parts_requests').select('id, vehiculo_id, part_name, manufacturer_sku, sides, status, vehiculos:vehiculo_id(placa)').order('created_at', { ascending:false });
+    if (isPending) q = q.eq('status','pendiente'); else q = q.eq('status','terminado');
     const v = document.getElementById('fltVehiculo')?.value?.trim(); if (v) q = isNaN(Number(v))? q.ilike('vehiculos.placa', `%${v}%`): q.eq('vehiculo_id', Number(v));
-    const prov = document.getElementById('fltProveedor')?.value?.trim(); if (prov) q = q.ilike('supplier', `%${prov}%`);
-    const pr = document.getElementById('fltPrioridad')?.value; if (pr) q = q.eq('priority', pr);
+    const prov = document.getElementById('fltProveedor')?.value?.trim(); if (prov) q = q.ilike('part_name', `%${prov}%`);
+    const pr = document.getElementById('fltPrioridad')?.value; if (pr) q = q.eq('priority', pr); // backward compat if exists
     const hasta = document.getElementById('fltHasta')?.value; if (hasta) q = q.lte('needed_by', hasta);
     const { data, error } = await q;
     if (error){ body.innerHTML = '<tr><td colspan="9" class="text-danger">'+(error.message||'Error')+'</td></tr>'; return; }
@@ -20,11 +20,8 @@
       return `<tr data-id="${r.id}">
         <td>${r.vehiculos?.placa||r.vehiculo_id||''}</td>
         <td>${r.part_name||''}</td>
-        <td>${r.supplier||''}</td>
-        <td class="text-end">${Number(r.qty||1).toFixed(2)}</td>
-        <td>${r.price!=null? Number(r.price).toLocaleString():''}</td>
-        <td>${r.currency||''}</td>
-        <td>${r.needed_by? new Date(r.needed_by).toLocaleDateString():''}</td>
+        <td>${r.manufacturer_sku||''}</td>
+        <td>${Array.isArray(r.sides)? r.sides.join(', '): ''}</td>
         <td><span class="badge bg-${badge(r.status)}">${r.status}</span></td>
         <td class="text-center">
           <a class="btn btn-sm btn-outline-secondary" href="vehiculos.html?id=${r.vehiculo_id}"><i class="fas fa-car"></i></a>
