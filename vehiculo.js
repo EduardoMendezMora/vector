@@ -512,16 +512,12 @@
       const delBtn = e.target.closest('.btn-del-task');
       const doneBtn = e.target.closest('.btn-mark-done-task');
       const reopenBtn = e.target.closest('.btn-reopen-task');
-      if (!editBtn && !delBtn && !doneBtn && !reopenBtn) return;
-      const tr = (editBtn||delBtn||doneBtn||reopenBtn).closest('tr');
+      const eyeBtn = e.target.closest('.btn-view-task');
+      if (!editBtn && !delBtn && !doneBtn && !reopenBtn && !eyeBtn) return;
+      const tr = (editBtn||delBtn||doneBtn||reopenBtn||eyeBtn).closest('tr');
       const taskId = tr?.getAttribute('data-id');
       if (!taskId) return;
-      // abrir ver modal (ojito)
-      const eyeBtn = e.target.closest('.btn-view-task');
-      if (eyeBtn) {
-        await openTaskView(taskId);
-        return;
-      }
+      if (eyeBtn) { await openTaskView(taskId); return; }
       if (doneBtn) {
         const { error } = await supabase.from('tasks').update({ status: 'terminada' }).eq('id', taskId);
         if (error) { alert(error.message||'No se pudo marcar'); return; }
