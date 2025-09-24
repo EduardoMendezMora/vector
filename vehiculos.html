@@ -211,6 +211,51 @@
         </div>
     </main>
 
+    <!-- Modal Ver Tarea con Comentarios -->
+    <div class="modal fade" id="vehTaskViewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-list-check me-2"></i>
+                        <span id="vtTitle">Tarea</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <div class="border rounded p-3">
+                                <div class="mb-2"><strong>Estado:</strong> <span id="vtStatusBadge" class="badge"></span></div>
+                                <div class="mb-2"><strong>Prioridad:</strong> <span id="vtPriorityBadge" class="badge"></span></div>
+                                <div class="mb-2"><strong>Vence:</strong> <span id="vtDue"></span></div>
+                                <div class="mb-2"><strong>Asignados:</strong> <span id="vtAssignees"></span></div>
+                                <div class="d-flex gap-2 mt-2">
+                                    <button class="btn btn-success btn-sm" id="vtMarkDone"><i class="fas fa-check me-1"></i>Terminar</button>
+                                    <button class="btn btn-warning btn-sm" id="vtReopen"><i class="fas fa-rotate-left me-1"></i>Reabrir</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <div class="border rounded p-3">
+                                <h6 class="mb-2"><i class="fas fa-comments me-2"></i>Comentarios</h6>
+                                <div id="vtCommentsList" class="d-flex flex-column gap-3 mb-3"></div>
+                                <form id="vtCommentForm">
+                                    <div class="mb-2">
+                                        <textarea id="vtCommentBody" class="form-control" rows="3" placeholder="Escribe un comentario..." required></textarea>
+                                    </div>
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-paper-plane me-1"></i>Comentar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Agregar Comentario -->
     <div class="modal fade" id="logModal" tabindex="-1">
         <div class="modal-dialog">

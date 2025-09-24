@@ -324,6 +324,51 @@
 
     function parseEmails(str){ return (str||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean); }
 
+  async function openTaskView(taskId){
+    const { data: t, error } = await supabase
+      .from('tasks')
+      .select('id,title,status,priority,due_date, task_assignees(profiles:profile_id(email,display_name))')
+      .eq('id', taskId).maybeSingle();
+    if (error||!t) { alert(error?.message||'No se pudo cargar'); return; }
+    document.getElementById('vtTitle').textContent = t.title||'Tarea';
+    const sBadge = document.getElementById('vtStatusBadge'); sBadge.className='badge bg-'+(t.status==='terminada'?'success':'warning'); sBadge.textContent = t.status;
+    const pBadge = document.getElementById('vtPriorityBadge'); pBadge.className='badge bg-'+(t.priority==='critica'?'danger':t.priority==='alta'?'warning':t.priority==='media'?'info':'secondary'); pBadge.textContent = t.priority;
+    document.getElementById('vtDue').textContent = t.due_date ? new Date(t.due_date).toLocaleDateString() : '';
+    const names = (t.task_assignees||[]).map(a=>a.profiles?.display_name||a.profiles?.email).filter(Boolean);
+    document.getElementById('vtAssignees').innerHTML = names.length? names.map(n=>`<span class="badge bg-secondary me-1">${n}</span>`).join('') : '<span class="badge bg-light text-muted">Sin asignados</span>';
+
+    // cargar comentarios
+    const list = document.getElementById('vtCommentsList');
+    list.innerHTML = '<div class="text-muted">Cargando...</div>';
+    const { data: comments } = await supabase
+      .from('task_comments')
+      .select('id, body, created_at, author:author_id(email,display_name)')
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: true });
+    list.innerHTML = (comments||[]).map(c=>{
+      const who = c.author?.display_name || c.author?.email || 'Usuario';
+      const ts = new Date(c.created_at).toLocaleString();
+      return `<div class="border rounded p-2"><div class="small text-muted mb-1">${who} — ${ts}</div><div>${(c.body||'').replace(/\n/g,'<br>')}</div></div>`;
+    }).join('') || '<div class="text-muted">Aún no hay comentarios.</div>';
+
+    // acciones
+    document.getElementById('vtMarkDone').onclick = async ()=>{ await supabase.from('tasks').update({ status: 'terminada' }).eq('id', taskId); await Promise.all([vehLoadTasks('pendiente'), vehLoadTasks('terminada'), openTaskView(taskId)]); };
+    document.getElementById('vtReopen').onclick = async ()=>{ await supabase.from('tasks').update({ status: 'pendiente' }).eq('id', taskId); await Promise.all([vehLoadTasks('pendiente'), vehLoadTasks('terminada'), openTaskView(taskId)]); };
+    const form = document.getElementById('vtCommentForm');
+    form.onsubmit = async (e)=>{
+      e.preventDefault();
+      const body = document.getElementById('vtCommentBody').value.trim(); if (!body) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { alert('Sesión requerida'); return; }
+      const { error: insErr } = await supabase.from('task_comments').insert({ task_id: taskId, author_id: user.id, body });
+      if (insErr) { alert(insErr.message||'No se pudo comentar'); return; }
+      document.getElementById('vtCommentBody').value='';
+      await openTaskView(taskId);
+    };
+
+    new bootstrap.Modal(document.getElementById('vehTaskViewModal')).show();
+  }
+
     async function vehLoadTasks(status){
       const isPending = (status||'pendiente') === 'pendiente';
       const tbody = document.getElementById(isPending ? 'vehTasksPendingBody' : 'vehTasksDoneBody');
@@ -379,6 +424,7 @@
             <button class="btn btn-sm btn-outline-primary btn-edit-task"><i class="fas fa-pen"></i></button>
             <button class="btn btn-sm btn-outline-danger btn-del-task"><i class="fas fa-trash"></i></button>
             ${isPending ? '<button class="btn btn-sm btn-success btn-mark-done-task"><i class="fas fa-check"></i></button>' : '<button class="btn btn-sm btn-warning btn-reopen-task"><i class="fas fa-rotate-left"></i></button>'}
+            <button class="btn btn-sm btn-outline-secondary btn-view-task"><i class="fas fa-eye"></i></button>
           </td>
         </tr>`;
       }).join('') || '<tr><td colspan="6" class="text-muted">Sin tareas.</td></tr>';
@@ -470,6 +516,12 @@
       const tr = (editBtn||delBtn||doneBtn||reopenBtn).closest('tr');
       const taskId = tr?.getAttribute('data-id');
       if (!taskId) return;
+      // abrir ver modal (ojito)
+      const eyeBtn = e.target.closest('.btn-view-task');
+      if (eyeBtn) {
+        await openTaskView(taskId);
+        return;
+      }
       if (doneBtn) {
         const { error } = await supabase.from('tasks').update({ status: 'terminada' }).eq('id', taskId);
         if (error) { alert(error.message||'No se pudo marcar'); return; }
