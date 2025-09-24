@@ -67,16 +67,38 @@
       document.getElementById('partsSupplierFilter').value
     ));
 
-    document.getElementById('newPartBtn')?.addEventListener('click', async ()=>{
+    // Guardar repuesto (modal)
+    document.getElementById('partForm')?.addEventListener('submit', async (e)=>{
+      e.preventDefault();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { alert('Sesión requerida'); return; }
-      const part_name = prompt('Nombre del repuesto'); if (!part_name) return;
-      const { error } = await supabase.from('parts_requests').insert({ vehiculo_id: data.id, part_name, created_by: user.id });
-      if (error) { alert(error.message||'No se pudo crear'); return; }
-      await loadParts(
-        document.getElementById('partsStatusFilter')?.value || '',
-        document.getElementById('partsSupplierFilter')?.value || ''
-      );
+      const payload = {
+        vehiculo_id: data.id,
+        part_name: document.getElementById('partName').value.trim(),
+        brand: document.getElementById('partBrand').value.trim()||null,
+        sku: document.getElementById('partSku').value.trim()||null,
+        qty: Number(document.getElementById('partQty').value||1),
+        unit: document.getElementById('partUnit').value.trim()||'pz',
+        price: document.getElementById('partPrice').value? Number(document.getElementById('partPrice').value): null,
+        currency: document.getElementById('partCurrency').value.trim()||'CRC',
+        supplier: document.getElementById('partSupplier').value.trim()||null,
+        needed_by: document.getElementById('partNeededBy').value||null,
+        priority: document.getElementById('partPriority').value,
+        status: document.getElementById('partStatus').value,
+        notes: document.getElementById('partNotes').value.trim()||null,
+        created_by: user.id
+      };
+      const partId = document.getElementById('partId').value;
+      if (partId) {
+        const { error } = await supabase.from('parts_requests').update(payload).eq('id', partId);
+        if (error) { alert(error.message||'No se pudo guardar'); return; }
+      } else {
+        const { error } = await supabase.from('parts_requests').insert(payload);
+        if (error) { alert(error.message||'No se pudo crear'); return; }
+      }
+      bootstrap.Modal.getInstance(document.getElementById('partModal'))?.hide();
+      e.target.reset();
+      await loadParts(document.getElementById('partsStatusFilter')?.value||'', document.getElementById('partsSupplierFilter')?.value||'');
     });
 
     document.addEventListener('click', async (e)=>{
@@ -84,11 +106,21 @@
       const partId = tr?.getAttribute('data-id');
       if (e.target.closest('.btn-edit-part')){
         const { data: row } = await supabase.from('parts_requests').select('*').eq('id', partId).maybeSingle();
-        const name = prompt('Repuesto', row?.part_name||'');
-        if (!name) return;
-        const { error } = await supabase.from('parts_requests').update({ part_name: name }).eq('id', partId);
-        if (error) { alert(error.message||'No se pudo guardar'); return; }
-        await loadParts(document.getElementById('partsStatusFilter')?.value||'', document.getElementById('partsSupplierFilter')?.value||'');
+        if (!row) return;
+        document.getElementById('partId').value = row.id;
+        document.getElementById('partName').value = row.part_name||'';
+        document.getElementById('partBrand').value = row.brand||'';
+        document.getElementById('partSku').value = row.sku||'';
+        document.getElementById('partQty').value = row.qty||1;
+        document.getElementById('partUnit').value = row.unit||'pz';
+        document.getElementById('partPrice').value = row.price||'';
+        document.getElementById('partCurrency').value = row.currency||'CRC';
+        document.getElementById('partSupplier').value = row.supplier||'';
+        document.getElementById('partNeededBy').value = row.needed_by||'';
+        document.getElementById('partPriority').value = row.priority||'media';
+        document.getElementById('partStatus').value = row.status||'solicitado';
+        document.getElementById('partNotes').value = row.notes||'';
+        new bootstrap.Modal(document.getElementById('partModal')).show();
       }
       if (e.target.closest('.btn-del-part')){
         if (!confirm('¿Eliminar repuesto?')) return;
