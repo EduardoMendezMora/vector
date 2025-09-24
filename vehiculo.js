@@ -359,7 +359,7 @@
         rows = (tdata||[]).map(t=>({ ...t, __assigneeNames: mapNames.get(t.id)||[] }));
       }
       tbody.innerHTML = (rows||[]).map(t=>{
-        const badge = t.status==='terminada'?'success':t.status==='en_progreso'?'primary':t.status==='bloqueada'?'warning':'secondary';
+        const badge = t.status==='terminada'?'success':t.status==='pendiente'?'warning':'secondary';
         const pr = t.priority==='critica'?'danger':t.priority==='alta'?'warning':t.priority==='media'?'info':'secondary';
         const due = t.due_date ? new Date(t.due_date).toLocaleDateString() : '';
       const names = Array.isArray(t.task_assignees)

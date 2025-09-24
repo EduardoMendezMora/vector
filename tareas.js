@@ -94,12 +94,7 @@
       }
     }
     tbody.innerHTML = (rows||[]).map(t => {
-      const badge = (st => ({
-        pendiente: 'secondary',
-        en_progreso: 'primary',
-        bloqueada: 'warning',
-        terminada: 'success'
-      }[st]||'secondary'))(t.status);
+      const badge = (st => ({ pendiente: 'warning', terminada: 'success' }[st]||'secondary'))(t.status);
       const prBadge = (p => ({ baja:'secondary', media:'info', alta:'warning', critica:'danger' }[p]||'secondary'))(t.priority);
       const due = t.due_date ? new Date(t.due_date).toLocaleDateString() : '';
       const placa = t.vehiculos?.placa || '';
