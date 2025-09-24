@@ -19,6 +19,91 @@
     if (isNaN(num)) return '-';
     return '₡' + num.toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+    // ---- REPUESTOS ----
+    async function loadParts(status, supplier){
+      const tbody = document.getElementById('partsBody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="9" class="text-muted">Cargando...</td></tr>';
+      let q = supabase.from('parts_requests').select('*').eq('vehiculo_id', data.id).order('created_at', { ascending:false });
+      if (status) q = q.eq('status', status);
+      if (supplier) q = q.ilike('supplier', `%${supplier}%`);
+      const { data: rows, error } = await q;
+      if (error) { tbody.innerHTML = '<tr><td colspan="9" class="text-danger">'+(error.message||'Error')+'</td></tr>'; return; }
+      const badge = s=>({solicitado:'secondary', aprobado:'info', comprado:'primary', recibido:'success', instalado:'success', rechazado:'danger', cancelado:'dark'}[s]||'secondary');
+      tbody.innerHTML = (rows||[]).map(r=>{
+        return `<tr data-id="${r.id}">
+          <td>${r.part_name||''}</td>
+          <td>${r.supplier||''}</td>
+          <td class="text-end">${Number(r.qty||1).toFixed(2)}</td>
+          <td>${r.unit||''}</td>
+          <td class="text-end">${r.price!=null? Number(r.price).toLocaleString():''}</td>
+          <td>${r.currency||''}</td>
+          <td>${r.needed_by? new Date(r.needed_by).toLocaleDateString():''}</td>
+          <td><span class="badge bg-${badge(r.status)}">${r.status}</span></td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-primary btn-edit-part"><i class="fas fa-pen"></i></button>
+            <button class="btn btn-sm btn-outline-danger btn-del-part"><i class="fas fa-trash"></i></button>
+            <div class="btn-group btn-group-sm ms-1" role="group">
+              <button class="btn btn-outline-secondary btn-state" data-state="aprobado">Aprobar</button>
+              <button class="btn btn-outline-secondary btn-state" data-state="comprado">Comprar</button>
+              <button class="btn btn-outline-secondary btn-state" data-state="recibido">Recibir</button>
+              <button class="btn btn-outline-secondary btn-state" data-state="instalado">Instalar</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="9" class="text-muted">Sin repuestos.</td></tr>';
+    }
+
+    document.getElementById('parts-tab')?.addEventListener('shown.bs.tab', ()=> loadParts(
+      document.getElementById('partsStatusFilter')?.value || '',
+      document.getElementById('partsSupplierFilter')?.value || ''
+    ));
+    document.getElementById('partsStatusFilter')?.addEventListener('change', ()=> loadParts(
+      document.getElementById('partsStatusFilter').value,
+      document.getElementById('partsSupplierFilter').value
+    ));
+    document.getElementById('partsSupplierFilter')?.addEventListener('input', ()=> loadParts(
+      document.getElementById('partsStatusFilter').value,
+      document.getElementById('partsSupplierFilter').value
+    ));
+
+    document.getElementById('newPartBtn')?.addEventListener('click', async ()=>{
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { alert('Sesión requerida'); return; }
+      const part_name = prompt('Nombre del repuesto'); if (!part_name) return;
+      const { error } = await supabase.from('parts_requests').insert({ vehiculo_id: data.id, part_name, created_by: user.id });
+      if (error) { alert(error.message||'No se pudo crear'); return; }
+      await loadParts(
+        document.getElementById('partsStatusFilter')?.value || '',
+        document.getElementById('partsSupplierFilter')?.value || ''
+      );
+    });
+
+    document.addEventListener('click', async (e)=>{
+      const tr = e.target.closest('tr');
+      const partId = tr?.getAttribute('data-id');
+      if (e.target.closest('.btn-edit-part')){
+        const { data: row } = await supabase.from('parts_requests').select('*').eq('id', partId).maybeSingle();
+        const name = prompt('Repuesto', row?.part_name||'');
+        if (!name) return;
+        const { error } = await supabase.from('parts_requests').update({ part_name: name }).eq('id', partId);
+        if (error) { alert(error.message||'No se pudo guardar'); return; }
+        await loadParts(document.getElementById('partsStatusFilter')?.value||'', document.getElementById('partsSupplierFilter')?.value||'');
+      }
+      if (e.target.closest('.btn-del-part')){
+        if (!confirm('¿Eliminar repuesto?')) return;
+        const { error } = await supabase.from('parts_requests').delete().eq('id', partId);
+        if (error) { alert(error.message||'No se pudo eliminar'); return; }
+        await loadParts(document.getElementById('partsStatusFilter')?.value||'', document.getElementById('partsSupplierFilter')?.value||'');
+      }
+      const stateBtn = e.target.closest('.btn-state');
+      if (stateBtn){
+        const newState = stateBtn.getAttribute('data-state');
+        const { error } = await supabase.from('parts_requests').update({ status: newState }).eq('id', partId);
+        if (error) { alert(error.message||'No se pudo cambiar estado'); return; }
+        await loadParts(document.getElementById('partsStatusFilter')?.value||'', document.getElementById('partsSupplierFilter')?.value||'');
+      }
+    });
 
   function renderInfo(v) {
     const title = document.getElementById('vehiculoTitulo');

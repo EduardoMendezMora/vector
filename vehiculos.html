@@ -108,6 +108,9 @@
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab">Tareas</button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="parts-tab" data-bs-toggle="tab" data-bs-target="#parts" type="button" role="tab">Repuestos</button>
+                            </li>
                         </ul>
                     </div>
                     <div class="card-body">
@@ -202,6 +205,47 @@
                                             </table>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="parts" role="tabpanel" aria-labelledby="parts-tab">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">Repuestos</h5>
+                                    <button class="btn btn-dark" id="newPartBtn"><i class="fas fa-plus me-2"></i>Nuevo repuesto</button>
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-auto">
+                                        <select class="form-select" id="partsStatusFilter">
+                                            <option value="">Todos</option>
+                                            <option value="solicitado">Solicitado</option>
+                                            <option value="aprobado">Aprobado</option>
+                                            <option value="comprado">Comprado</option>
+                                            <option value="recibido">Recibido</option>
+                                            <option value="instalado">Instalado</option>
+                                            <option value="rechazado">Rechazado</option>
+                                            <option value="cancelado">Cancelado</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-auto">
+                                        <input type="text" class="form-control" id="partsSupplierFilter" placeholder="Proveedor">
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Repuesto</th>
+                                                <th>Proveedor</th>
+                                                <th class="text-end">Cant.</th>
+                                                <th>Unidad</th>
+                                                <th class="text-end">Precio</th>
+                                                <th>Moneda</th>
+                                                <th>Necesario</th>
+                                                <th>Estado</th>
+                                                <th class="text-center">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="partsBody"></tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
