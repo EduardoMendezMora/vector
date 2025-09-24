@@ -381,6 +381,17 @@ body {
   box-shadow: 0 2px 8px rgba(27, 54, 93, 0.25);
 }
 
+/* Mejora de contraste de pestaña inactiva para mejor legibilidad */
+.nav-tabs .nav-link:not(.active) {
+  color: var(--vector-gray-700);
+  background: #f8fafc; /* gris muy claro para destacar */
+  border: 1px solid var(--vector-gray-200);
+}
+.nav-tabs .nav-link:not(.active):hover {
+  background: #eef2f7;
+  color: var(--vector-navy);
+}
+
 /* Card polish */
 .card {
   border-radius: 14px;
