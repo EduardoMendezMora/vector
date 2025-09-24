@@ -24,6 +24,7 @@
         <td>${Array.isArray(r.sides)? r.sides.join(', '): ''}</td>
         <td><span class="badge bg-${badge(r.status)}">${r.status}</span></td>
         <td class="text-center">
+          <a class="btn btn-sm btn-outline-secondary" href="repuesto.html?part_id=${r.id}"><i class="fas fa-eye"></i></a>
           <a class="btn btn-sm btn-outline-secondary" href="vehiculos.html?id=${r.vehiculo_id}"><i class="fas fa-car"></i></a>
         </td>
       </tr>`;

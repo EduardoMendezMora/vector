@@ -39,6 +39,7 @@
           <td>${Array.isArray(r.sides)? r.sides.join(', '): ''}</td>
           <td><span class="badge bg-${badge(r.status)}">${r.status}</span></td>
           <td class="text-center">
+            <a class="btn btn-sm btn-outline-secondary" href="repuesto.html?part_id=${r.id}"><i class="fas fa-eye"></i></a>
             <button class="btn btn-sm btn-outline-primary btn-edit-part"><i class="fas fa-pen"></i></button>
             <button class="btn btn-sm btn-outline-danger btn-del-part"><i class="fas fa-trash"></i></button>
             <button class="btn btn-sm btn-outline-secondary btn-state" data-state="pendiente">Pendiente</button>
@@ -125,7 +126,8 @@
       await loadParts(document.getElementById('partsStatusFilter')?.value||'', document.getElementById('partsSupplierFilter')?.value||'');
     });
 
-    document.addEventListener('click', async (e)=>{
+    // Delegación de eventos SOLO para la tabla de repuestos, evita interferir con otros listeners
+    document.getElementById('partsBody')?.addEventListener('click', async (e)=>{
       const tr = e.target.closest('tr');
       const partId = tr?.getAttribute('data-id');
       if (e.target.closest('.btn-edit-part')){
