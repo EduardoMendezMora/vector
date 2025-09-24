@@ -328,40 +328,43 @@
       const tbody = document.getElementById('vehTasksBody');
       if (!tbody) return;
       tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Cargando...</td></tr>';
-      // Usar vista si está disponible; fallback si no
-      let q = supabase.from('v_tasks_with_assignees').select('*').eq('vehiculo_id', data.id).order('created_at', { ascending: false });
-      let { data: rows, error } = await q;
+      // Traer directamente tasks con join a perfiles asignados; fallback si falla
+      let { data: rows, error } = await supabase
+        .from('tasks')
+        .select('id,title,status,priority,due_date, task_assignees(profiles:profile_id(email,display_name))')
+        .eq('vehiculo_id', data.id)
+        .order('created_at', { ascending:false });
       if (error) {
         const msg = error.message||'';
-        if (/v_tasks_with_assignees|schema cache|relation .* does not exist/i.test(msg)) {
-          const { data: tdata, error: tErr } = await supabase
-            .from('tasks')
-            .select('id,title,status,priority,due_date, task_assignees(profiles:profile_id(email,display_name))')
-            .eq('vehiculo_id', data.id)
-            .order('created_at', { ascending:false });
-          if (tErr) {
-            const msg2 = tErr.message||'';
-            if (/public.*tasks.*schema cache|relation .* does not exist/i.test(msg2)) {
-              tasksNotice('Falta cargar el schema de tareas. Ejecuta 15_tasks_setup.sql y luego: NOTIFY pgrst, \"reload schema\";', 'warning');
-            }
-            tbody.innerHTML = '<tr><td colspan="5" class="text-danger">'+(msg2||'Error')+'</td></tr>'; return; }
-          const ids = (tdata||[]).map(t=>t.id);
-          const counts = new Map();
-          if (ids.length){
-            const { data: asg } = await supabase.from('task_assignees').select('task_id,profile_id').in('task_id', ids);
-            (asg||[]).forEach(a=>counts.set(a.task_id, (counts.get(a.task_id)||0)+1));
+        const { data: tdata, error: tErr } = await supabase
+          .from('tasks')
+          .select('id,title,status,priority,due_date')
+          .eq('vehiculo_id', data.id)
+          .order('created_at', { ascending:false });
+        if (tErr) {
+          const msg2 = tErr.message||'';
+          if (/public.*tasks.*schema cache|relation .* does not exist/i.test(msg2)) {
+            tasksNotice('Falta cargar el schema de tareas. Ejecuta 15_tasks_setup.sql y luego: NOTIFY pgrst, \"reload schema\";', 'warning');
           }
-          rows = (tdata||[]).map(t=>({ ...t, assignees: Array.from({length: counts.get(t.id)||0}) }));
-          tasksNotice('Vista no disponible aún; usando modo compatible. Ejecuta NOTIFY pgrst, \"reload schema\";', 'warning');
-        } else {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-danger">'+(msg||'Error')+'</td></tr>'; return;
+          tbody.innerHTML = '<tr><td colspan="5" class="text-danger">'+(msg2||'Error')+'</td></tr>'; return; }
+        const ids = (tdata||[]).map(t=>t.id);
+        const mapNames = new Map();
+        if (ids.length){
+          const { data: asg } = await supabase.from('task_assignees').select('task_id, profiles:profile_id(email,display_name)').in('task_id', ids);
+          (asg||[]).forEach(a=>{
+            const label = a.profiles?.display_name || a.profiles?.email || '';
+            mapNames.set(a.task_id, [...(mapNames.get(a.task_id)||[]), label]);
+          });
         }
+        rows = (tdata||[]).map(t=>({ ...t, __assigneeNames: mapNames.get(t.id)||[] }));
       }
       tbody.innerHTML = (rows||[]).map(t=>{
         const badge = t.status==='terminada'?'success':t.status==='en_progreso'?'primary':t.status==='bloqueada'?'warning':'secondary';
         const pr = t.priority==='critica'?'danger':t.priority==='alta'?'warning':t.priority==='media'?'info':'secondary';
         const due = t.due_date ? new Date(t.due_date).toLocaleDateString() : '';
-        const names = Array.isArray(t.task_assignees) ? (t.task_assignees||[]).map(a=>a.profiles?.display_name || a.profiles?.email).filter(Boolean) : [];
+      const names = Array.isArray(t.task_assignees)
+        ? (t.task_assignees||[]).map(a=>a.profiles?.display_name || a.profiles?.email).filter(Boolean)
+        : (t.__assigneeNames||[]);
         const ass = names.length;
         return `<tr data-id="${t.id}">
           <td>${t.title||''}</td>
