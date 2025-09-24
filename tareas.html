@@ -21,6 +21,16 @@
     <div id="tasksNotice" class="mb-2"></div>
 
     <div class="card">
+      <div class="card-header bg-white border-bottom">
+        <ul class="nav nav-tabs card-header-tabs" id="tasksTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-pending" data-bs-toggle="tab" data-bs-target="#pane-pending" type="button" role="tab">Pendientes <span class="badge bg-secondary ms-1" id="badgePending">0</span></button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-done" data-bs-toggle="tab" data-bs-target="#pane-done" type="button" role="tab">Terminadas <span class="badge bg-secondary ms-1" id="badgeDone">0</span></button>
+          </li>
+        </ul>
+      </div>
       <div class="card-body">
         <div class="row g-2 mb-3">
           <div class="col-auto">
@@ -48,21 +58,43 @@
             <input type="text" class="form-control" id="filterVehiculo" placeholder="ID Vehículo (opcional)">
           </div>
         </div>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>Título</th>
-                <th>Vehículo</th>
-                <th>Asignados</th>
-                <th>Estado</th>
-                <th>Prioridad</th>
-                <th>Vence</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tasksTableBody"></tbody>
-          </table>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="pane-pending" role="tabpanel" aria-labelledby="tab-pending">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Título</th>
+                    <th>Vehículo</th>
+                    <th>Asignados</th>
+                    <th>Estado</th>
+                    <th>Prioridad</th>
+                    <th>Vence</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tasksPendingBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="pane-done" role="tabpanel" aria-labelledby="tab-done">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Título</th>
+                    <th>Vehículo</th>
+                    <th>Asignados</th>
+                    <th>Estado</th>
+                    <th>Prioridad</th>
+                    <th>Vence</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tasksDoneBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>

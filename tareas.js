@@ -27,8 +27,9 @@
     select.innerHTML = (cachedUsers).map(u => `<option value="${u.id}">${u.email}${u.display_name?(' — '+u.display_name):''}</option>`).join('');
   }
 
-  async function loadTasks() {
-    const tbody = document.getElementById('tasksTableBody');
+  async function loadTasks(statusFilter) {
+    const isPending = (statusFilter||'pendiente') === 'pendiente';
+    const tbody = document.getElementById(isPending ? 'tasksPendingBody' : 'tasksDoneBody');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>';
 
@@ -46,6 +47,7 @@
       `)
       .order('created_at', { ascending: false });
     if (vehiculoId) query = query.eq('vehiculo_id', Number(vehiculoId));
+    query = query.eq('status', isPending ? 'pendiente' : 'terminada');
     if (estado) query = query.eq('status', estado);
     if (prioridad) query = query.eq('priority', prioridad);
     if (hasta) query = query.lte('due_date', hasta);
@@ -93,7 +95,7 @@
         return;
       }
     }
-    tbody.innerHTML = (rows||[]).map(t => {
+    const html = (rows||[]).map(t => {
       const badge = (st => ({ pendiente: 'warning', terminada: 'success' }[st]||'secondary'))(t.status);
       const prBadge = (p => ({ baja:'secondary', media:'info', alta:'warning', critica:'danger' }[p]||'secondary'))(t.priority);
       const due = t.due_date ? new Date(t.due_date).toLocaleDateString() : '';
@@ -117,10 +119,16 @@
           <td class="text-center">
             <button class="btn btn-sm btn-outline-primary btn-edit"><i class="fas fa-pen"></i></button>
             <button class="btn btn-sm btn-outline-danger btn-delete"><i class="fas fa-trash"></i></button>
+            ${isPending ? '<button class="btn btn-sm btn-success btn-mark-done"><i class="fas fa-check"></i></button>' : '<button class="btn btn-sm btn-warning btn-reopen"><i class="fas fa-rotate-left"></i></button>'}
           </td>
         </tr>
       `;
     }).join('');
+    tbody.innerHTML = html || '<tr><td colspan="7" class="text-center text-muted">Sin tareas</td></tr>';
+
+    // actualizar badges
+    const badge = document.getElementById(isPending ? 'badgePending' : 'badgeDone');
+    if (badge) badge.textContent = String(rows?.length||0);
   }
 
   function selectedIdsFrom(selectId){
@@ -146,15 +154,29 @@
     document.addEventListener('click', async (e) => {
       const btnEdit = e.target.closest('.btn-edit');
       const btnDelete = e.target.closest('.btn-delete');
-      if (!btnEdit && !btnDelete) return;
-      const tr = (btnEdit||btnDelete).closest('tr');
+      const btnMarkDone = e.target.closest('.btn-mark-done');
+      const btnReopen = e.target.closest('.btn-reopen');
+      if (!btnEdit && !btnDelete && !btnMarkDone && !btnReopen) return;
+      const tr = (btnEdit||btnDelete||btnMarkDone||btnReopen).closest('tr');
       const id = tr?.getAttribute('data-id');
       if (!id) return;
+      if (btnMarkDone) {
+        const { error } = await supabase.from('tasks').update({ status: 'terminada' }).eq('id', id);
+        if (error) { alert(error.message||'No se pudo marcar'); return; }
+        await Promise.all([loadTasks('pendiente'), loadTasks('terminada')]);
+        return;
+      }
+      if (btnReopen) {
+        const { error } = await supabase.from('tasks').update({ status: 'pendiente' }).eq('id', id);
+        if (error) { alert(error.message||'No se pudo reabrir'); return; }
+        await Promise.all([loadTasks('pendiente'), loadTasks('terminada')]);
+        return;
+      }
       if (btnDelete) {
         if (!confirm('¿Eliminar tarea?')) return;
         const { error } = await supabase.from('tasks').delete().eq('id', id);
         if (error) { alert(error.message||'No se pudo eliminar'); return; }
-        await loadTasks();
+        await Promise.all([loadTasks('pendiente'), loadTasks('terminada')]);
         return;
       }
       if (btnEdit) {
@@ -216,12 +238,17 @@
     if (!(await ensureInit())) return;
     await loadAssignableUsers();
     ['filterVehiculo','filterEstado','filterPrioridad','filterHasta'].forEach(id => {
-      document.getElementById(id)?.addEventListener('change', loadTasks);
+      document.getElementById(id)?.addEventListener('change', () => {
+        const active = document.querySelector('#tasksTabs .nav-link.active')?.id === 'tab-pending' ? 'pendiente' : 'terminada';
+        loadTasks(active);
+      });
     });
     wireFilters();
     wireTable();
     wireForm();
-    await loadTasks();
+    document.getElementById('tab-pending')?.addEventListener('shown.bs.tab', () => loadTasks('pendiente'));
+    document.getElementById('tab-done')?.addEventListener('shown.bs.tab', () => loadTasks('terminada'));
+    await Promise.all([loadTasks('pendiente'), loadTasks('terminada')]);
   });
 })();
 
