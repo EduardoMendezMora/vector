@@ -20,17 +20,18 @@
     return '₡' + num.toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
     // ---- REPUESTOS ----
-    async function loadParts(status, supplier){
+    async function loadParts(status, supplier, query){
       const tbody = document.getElementById('partsBody');
       if (!tbody) return;
       tbody.innerHTML = '<tr><td colspan="9" class="text-muted">Cargando...</td></tr>';
       let q = supabase.from('parts_requests').select('*').eq('vehiculo_id', data.id).order('created_at', { ascending:false });
       if (status) q = q.eq('status', status);
       if (supplier) q = q.ilike('supplier', `%${supplier}%`);
+      if (query) q = q.ilike('part_name', `%${query}%`);
       const { data: rows, error } = await q;
       if (error) { tbody.innerHTML = '<tr><td colspan="9" class="text-danger">'+(error.message||'Error')+'</td></tr>'; return; }
       const badge = s=>({solicitado:'secondary', aprobado:'info', comprado:'primary', recibido:'success', instalado:'success', rechazado:'danger', cancelado:'dark'}[s]||'secondary');
-      tbody.innerHTML = (rows||[]).map(r=>{
+      const html = (rows||[]).map(r=>{
         return `<tr data-id="${r.id}">
           <td>${r.part_name||''}</td>
           <td>${r.supplier||''}</td>
@@ -51,20 +52,34 @@
             </div>
           </td>
         </tr>`;
-      }).join('') || '<tr><td colspan="9" class="text-muted">Sin repuestos.</td></tr>';
+      }).join('');
+      tbody.innerHTML = html || '<tr><td colspan="9" class="text-muted">Sin repuestos.</td></tr>';
+      // Totales
+      const total = (rows||[]).reduce((acc, r)=> acc + (Number(r.price||0)*Number(r.qty||1)), 0);
+      const currency = (rows&&rows[0]?.currency)||'CRC';
+      const totalsEl = document.getElementById('partsTotals');
+      if (totalsEl) totalsEl.textContent = rows?.length ? `Ítems: ${rows.length} — Total estimado: ${total.toLocaleString()} ${currency}` : '';
     }
 
     document.getElementById('parts-tab')?.addEventListener('shown.bs.tab', ()=> loadParts(
       document.getElementById('partsStatusFilter')?.value || '',
-      document.getElementById('partsSupplierFilter')?.value || ''
+      document.getElementById('partsSupplierFilter')?.value || '',
+      document.getElementById('partsQuery')?.value || ''
     ));
     document.getElementById('partsStatusFilter')?.addEventListener('change', ()=> loadParts(
       document.getElementById('partsStatusFilter').value,
-      document.getElementById('partsSupplierFilter').value
+      document.getElementById('partsSupplierFilter').value,
+      document.getElementById('partsQuery').value
     ));
     document.getElementById('partsSupplierFilter')?.addEventListener('input', ()=> loadParts(
       document.getElementById('partsStatusFilter').value,
-      document.getElementById('partsSupplierFilter').value
+      document.getElementById('partsSupplierFilter').value,
+      document.getElementById('partsQuery').value
+    ));
+    document.getElementById('partsQuery')?.addEventListener('input', ()=> loadParts(
+      document.getElementById('partsStatusFilter').value,
+      document.getElementById('partsSupplierFilter').value,
+      document.getElementById('partsQuery').value
     ));
 
     // Guardar repuesto (modal)

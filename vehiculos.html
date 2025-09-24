@@ -228,6 +228,9 @@
                                     <div class="col-auto">
                                         <input type="text" class="form-control" id="partsSupplierFilter" placeholder="Proveedor">
                                     </div>
+                                    <div class="col-auto">
+                                        <input type="text" class="form-control" id="partsQuery" placeholder="Buscar repuesto">
+                                    </div>
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
@@ -245,6 +248,11 @@
                                             </tr>
                                         </thead>
                                         <tbody id="partsBody"></tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="9" class="text-end text-muted" id="partsTotals"></td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
