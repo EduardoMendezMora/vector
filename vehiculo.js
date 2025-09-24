@@ -384,6 +384,8 @@
       const m = new bootstrap.Modal(document.getElementById('vehTaskModal'));
       document.getElementById('vehTaskForm').reset();
       document.getElementById('vehTaskId').value = '';
+      const form = document.getElementById('vehTaskForm');
+      if (form) { form.dataset.originalAssignees = '[]'; form.dataset.originalTask = '{}'; }
       m.show();
     });
     // cargar usuarios al abrir modal
@@ -407,16 +409,40 @@
       if (!title) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { alert('Sesión requerida'); return; }
+      const form = document.getElementById('vehTaskForm');
+      const origAssignees = JSON.parse(form?.dataset?.originalAssignees || '[]');
+      const origTask = JSON.parse(form?.dataset?.originalTask || '{}');
+      const payload = { title, description, status, priority, due_date: due };
       if (existingId) {
-        const { error: upErr } = await supabase.from('tasks').update({ title, description, status, priority, due_date: due }).eq('id', existingId);
-        if (upErr) { alert(upErr.message||'No se pudo actualizar'); return; }
-        await supabase.from('task_assignees').delete().eq('task_id', existingId);
-        if (sel.length) {
-          const rows = sel.map(pid=>({ task_id: existingId, profile_id: pid }));
-          await supabase.from('task_assignees').upsert(rows);
+        const taskChanged = (
+          (origTask.title||'') !== payload.title ||
+          (origTask.description||'') !== payload.description ||
+          (origTask.status||'') !== payload.status ||
+          (origTask.priority||'') !== payload.priority ||
+          (origTask.due_date||null) !== payload.due_date
+        );
+        const toAdd = sel.filter(id => !origAssignees.includes(id));
+        const toRemove = origAssignees.filter(id => !sel.includes(id));
+        if (!taskChanged && toAdd.length === 0 && toRemove.length === 0) {
+          bootstrap.Modal.getInstance(document.getElementById('vehTaskModal'))?.hide();
+          document.getElementById('vehTaskForm').reset();
+          return;
+        }
+        if (taskChanged) {
+          const { error: upErr } = await supabase.from('tasks').update(payload).eq('id', existingId);
+          if (upErr) { alert(upErr.message||'No se pudo actualizar'); return; }
+        }
+        if (toRemove.length) {
+          const { error: delErr } = await supabase.from('task_assignees').delete().eq('task_id', existingId).in('profile_id', toRemove);
+          if (delErr) { alert(delErr.message||'No se pudo actualizar asignados'); return; }
+        }
+        if (toAdd.length) {
+          const rows = toAdd.map(pid=>({ task_id: existingId, profile_id: pid }));
+          const { error: insErr } = await supabase.from('task_assignees').upsert(rows);
+          if (insErr) { alert(insErr.message||'No se pudo actualizar asignados'); return; }
         }
       } else {
-        const { data: ins, error: insErr } = await supabase.from('tasks').insert({ vehiculo_id: data.id, title, description, status, priority, due_date: due, created_by: user.id }).select('id').single();
+        const { data: ins, error: insErr } = await supabase.from('tasks').insert({ vehiculo_id: data.id, ...payload, created_by: user.id }).select('id').single();
         if (insErr) { alert(insErr.message||'No se pudo crear'); return; }
         if (sel.length){
           const rows = sel.map(pid=>({ task_id: ins.id, profile_id: pid }));
@@ -459,6 +485,10 @@
         Array.from(select.options).forEach(o=>{ o.selected = ids.includes(o.value); });
         const m = new bootstrap.Modal(document.getElementById('vehTaskModal'));
         m.show();
+        // Guardar snapshot para delta
+        const form = document.getElementById('vehTaskForm');
+        form.dataset.originalAssignees = JSON.stringify(ids);
+        form.dataset.originalTask = JSON.stringify({ title: t.title||'', description: t.description||'', status: t.status||'pendiente', priority: t.priority||'media', due_date: t.due_date||null });
         // Ya no reemplazamos el submit; el handler general detecta si hay id para actualizar
       }
     });
