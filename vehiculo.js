@@ -324,15 +324,17 @@
 
     function parseEmails(str){ return (str||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean); }
 
-    async function vehLoadTasks(){
-      const tbody = document.getElementById('vehTasksBody');
+    async function vehLoadTasks(status){
+      const isPending = (status||'pendiente') === 'pendiente';
+      const tbody = document.getElementById(isPending ? 'vehTasksPendingBody' : 'vehTasksDoneBody');
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Cargando...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Cargando...</td></tr>';
       // Traer directamente tasks con join a perfiles asignados; fallback si falla
       let { data: rows, error } = await supabase
         .from('tasks')
         .select('id,title,status,priority,due_date, task_assignees(profiles:profile_id(email,display_name))')
         .eq('vehiculo_id', data.id)
+        .eq('status', isPending ? 'pendiente' : 'terminada')
         .order('created_at', { ascending:false });
       if (error) {
         const msg = error.message||'';
@@ -340,6 +342,7 @@
           .from('tasks')
           .select('id,title,status,priority,due_date')
           .eq('vehiculo_id', data.id)
+          .eq('status', isPending ? 'pendiente' : 'terminada')
           .order('created_at', { ascending:false });
         if (tErr) {
           const msg2 = tErr.message||'';
@@ -375,9 +378,10 @@
           <td class="text-center">
             <button class="btn btn-sm btn-outline-primary btn-edit-task"><i class="fas fa-pen"></i></button>
             <button class="btn btn-sm btn-outline-danger btn-del-task"><i class="fas fa-trash"></i></button>
+            ${isPending ? '<button class="btn btn-sm btn-success btn-mark-done-task"><i class="fas fa-check"></i></button>' : '<button class="btn btn-sm btn-warning btn-reopen-task"><i class="fas fa-rotate-left"></i></button>'}
           </td>
         </tr>`;
-      }).join('') || '<tr><td colspan="5" class="text-muted">Sin tareas aún.</td></tr>';
+      }).join('') || '<tr><td colspan="6" class="text-muted">Sin tareas.</td></tr>';
     }
 
     document.getElementById('vehNewTaskBtn')?.addEventListener('click', ()=>{
@@ -453,22 +457,36 @@
       }
       bootstrap.Modal.getInstance(document.getElementById('vehTaskModal'))?.hide();
       document.getElementById('vehTaskForm').reset();
-      await vehLoadTasks();
+      await Promise.all([vehLoadTasks('pendiente'), vehLoadTasks('terminada')]);
     });
 
     // editar/eliminar
     document.addEventListener('click', async (e)=>{
       const editBtn = e.target.closest('.btn-edit-task');
       const delBtn = e.target.closest('.btn-del-task');
-      if (!editBtn && !delBtn) return;
-      const tr = (editBtn||delBtn).closest('tr');
+      const doneBtn = e.target.closest('.btn-mark-done-task');
+      const reopenBtn = e.target.closest('.btn-reopen-task');
+      if (!editBtn && !delBtn && !doneBtn && !reopenBtn) return;
+      const tr = (editBtn||delBtn||doneBtn||reopenBtn).closest('tr');
       const taskId = tr?.getAttribute('data-id');
       if (!taskId) return;
+      if (doneBtn) {
+        const { error } = await supabase.from('tasks').update({ status: 'terminada' }).eq('id', taskId);
+        if (error) { alert(error.message||'No se pudo marcar'); return; }
+        await Promise.all([vehLoadTasks('pendiente'), vehLoadTasks('terminada')]);
+        return;
+      }
+      if (reopenBtn) {
+        const { error } = await supabase.from('tasks').update({ status: 'pendiente' }).eq('id', taskId);
+        if (error) { alert(error.message||'No se pudo reabrir'); return; }
+        await Promise.all([vehLoadTasks('pendiente'), vehLoadTasks('terminada')]);
+        return;
+      }
       if (delBtn) {
         if (!confirm('¿Eliminar tarea?')) return;
         const { error } = await supabase.from('tasks').delete().eq('id', taskId);
         if (error) { alert(error.message||'No se pudo eliminar'); return; }
-        await vehLoadTasks();
+        await Promise.all([vehLoadTasks('pendiente'), vehLoadTasks('terminada')]);
         return;
       }
       if (editBtn) {
@@ -500,8 +518,13 @@
       }
     });
 
-    // cargar tareas al abrir la pestaña
-    document.getElementById('tasks-tab')?.addEventListener('shown.bs.tab', vehLoadTasks);
+    // cargar tareas al abrir la pestaña + tabs internas
+    document.getElementById('tasks-tab')?.addEventListener('shown.bs.tab', ()=>{
+      vehLoadTasks('pendiente');
+      vehLoadTasks('terminada');
+    });
+    document.getElementById('veh-tab-pending')?.addEventListener('shown.bs.tab', ()=>vehLoadTasks('pendiente'));
+    document.getElementById('veh-tab-done')?.addEventListener('shown.bs.tab', ()=>vehLoadTasks('terminada'));
   }
 
   main();

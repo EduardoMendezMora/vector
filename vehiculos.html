@@ -159,20 +159,49 @@
                                     <button class="btn btn-dark" id="vehNewTaskBtn"><i class="fas fa-plus me-2"></i>Nueva tarea</button>
                                 </div>
                                 <div id="vehTasksNotice" class="mb-2"></div>
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Título</th>
-                                                <th>Asignados</th>
-                                                <th>Estado</th>
-                                                <th>Prioridad</th>
-                                                <th>Vence</th>
-                                                <th class="text-center">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="vehTasksBody"></tbody>
-                                    </table>
+                                <ul class="nav nav-tabs mb-2" id="vehTasksTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="veh-tab-pending" data-bs-toggle="tab" data-bs-target="#veh-pane-pending" type="button" role="tab">Pendientes</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="veh-tab-done" data-bs-toggle="tab" data-bs-target="#veh-pane-done" type="button" role="tab">Terminadas</button>
+                                    </li>
+                                </ul>
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="veh-pane-pending" role="tabpanel" aria-labelledby="veh-tab-pending">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Título</th>
+                                                        <th>Asignados</th>
+                                                        <th>Estado</th>
+                                                        <th>Prioridad</th>
+                                                        <th>Vence</th>
+                                                        <th class="text-center">Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="vehTasksPendingBody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="veh-pane-done" role="tabpanel" aria-labelledby="veh-tab-done">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Título</th>
+                                                        <th>Asignados</th>
+                                                        <th>Estado</th>
+                                                        <th>Prioridad</th>
+                                                        <th>Vence</th>
+                                                        <th class="text-center">Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="vehTasksDoneBody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
