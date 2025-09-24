@@ -385,7 +385,7 @@
       document.getElementById('vehTaskForm').reset();
       document.getElementById('vehTaskId').value = '';
       const form = document.getElementById('vehTaskForm');
-      if (form) { form.dataset.originalAssignees = '[]'; form.dataset.originalTask = '{}'; }
+      if (form) { form.dataset.originalAssignees = '[]'; form.dataset.originalTask = '{}'; form.dataset.assigneesTouched = 'false'; }
       m.show();
     });
     // cargar usuarios al abrir modal
@@ -412,6 +412,7 @@
       const form = document.getElementById('vehTaskForm');
       const origAssignees = JSON.parse(form?.dataset?.originalAssignees || '[]');
       const origTask = JSON.parse(form?.dataset?.originalTask || '{}');
+      const assigneesTouched = (form?.dataset?.assigneesTouched === 'true');
       const payload = { title, description, status, priority, due_date: due };
       if (existingId) {
         const taskChanged = (
@@ -421,8 +422,9 @@
           (origTask.priority||'') !== payload.priority ||
           (origTask.due_date||null) !== payload.due_date
         );
-        const toAdd = sel.filter(id => !origAssignees.includes(id));
-        const toRemove = origAssignees.filter(id => !sel.includes(id));
+        // Solo recalcular deltas si el usuario tocó el selector
+        const toAdd = assigneesTouched ? sel.filter(id => !origAssignees.includes(id)) : [];
+        const toRemove = assigneesTouched ? origAssignees.filter(id => !sel.includes(id)) : [];
         if (!taskChanged && toAdd.length === 0 && toRemove.length === 0) {
           bootstrap.Modal.getInstance(document.getElementById('vehTaskModal'))?.hide();
           document.getElementById('vehTaskForm').reset();
@@ -489,6 +491,11 @@
         const form = document.getElementById('vehTaskForm');
         form.dataset.originalAssignees = JSON.stringify(ids);
         form.dataset.originalTask = JSON.stringify({ title: t.title||'', description: t.description||'', status: t.status||'pendiente', priority: t.priority||'media', due_date: t.due_date||null });
+        form.dataset.assigneesTouched = 'false';
+        // Marcar cuando el usuario cambie selección
+        document.getElementById('vehTaskAssignees')?.addEventListener('change', () => {
+          form.dataset.assigneesTouched = 'true';
+        }, { once: false });
         // Ya no reemplazamos el submit; el handler general detecta si hay id para actualizar
       }
     });
