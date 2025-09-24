@@ -24,7 +24,8 @@
       const tbody = document.getElementById('partsBody');
       if (!tbody) return;
       tbody.innerHTML = '<tr><td colspan="9" class="text-muted">Cargando...</td></tr>';
-      let q = supabase.from('parts_requests').select('*').eq('vehiculo_id', data.id).order('created_at', { ascending:false });
+      // usar id del vehículo de la URL para evitar shadowing de variables
+      let q = supabase.from('parts_requests').select('*').eq('vehiculo_id', Number(idParam)).order('created_at', { ascending:false });
       if (status) q = q.eq('status', status);
       if (supplier) q = q.ilike('supplier', `%${supplier}%`);
       if (query) q = q.ilike('part_name', `%${query}%`);
@@ -88,7 +89,7 @@
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { alert('Sesión requerida'); return; }
       const payload = {
-        vehiculo_id: data.id,
+        vehiculo_id: Number(idParam),
         part_name: document.getElementById('partName').value.trim(),
         brand: document.getElementById('partBrand').value.trim()||null,
         sku: document.getElementById('partSku').value.trim()||null,
