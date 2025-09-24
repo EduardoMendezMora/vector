@@ -120,6 +120,7 @@
             <button class="btn btn-sm btn-outline-primary btn-edit"><i class="fas fa-pen"></i></button>
             <button class="btn btn-sm btn-outline-danger btn-delete"><i class="fas fa-trash"></i></button>
             ${isPending ? '<button class="btn btn-sm btn-success btn-mark-done"><i class="fas fa-check"></i></button>' : '<button class="btn btn-sm btn-warning btn-reopen"><i class="fas fa-rotate-left"></i></button>'}
+            <a class="btn btn-sm btn-outline-secondary" href="tarea.html?task_id=${t.id}"><i class="fas fa-eye"></i></a>
           </td>
         </tr>
       `;
